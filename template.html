@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>出成率对账台 · 买整只自己拆，还是直接买分部位</title>
+<meta name="description" content="买一只整鸡整鸭整鱼、一整扇排骨或一整条腿，拆开卖的分部位价格差得离谱：自己拆到底省不省？把出成率、不可食损耗、处理成本与分部位市价摊成一本账：折扣率、净料单价、按售价分摊的等效单价、回本最少部位数、熟制缩水后的熟食成本与临界熟制率，外加盈亏平衡价的闭式反推。全部自己填，页面不联网。">
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#fff; --ink:#161b22; --ink2:#4a5568; --ink3:#7b8794;
+    --line:#e3e6eb; --line2:#cbd2da; --brand:#0f5fa6; --brand2:#eaf2fa;
+    --good:#0f7b52; --goodbg:#e8f6ef; --warn:#9a5b00; --warnbg:#fff5e5; --bad:#b42318; --badbg:#fdeceb;
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+  .app{max-width:1340px;margin:0 auto;padding:22px 18px 60px;display:grid;grid-template-columns:436px minmax(0,1fr);gap:18px;align-items:start}
+  .app > *{min-width:0}
+  header.top{grid-column:1/-1;padding:4px 2px 0}
+  h1{margin:0 0 6px;font-size:26px;letter-spacing:.2px}
+  .lede{margin:0;color:var(--ink2);max-width:960px}
+  .badges{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px}
+  .badge{font-size:12px;padding:3px 9px;border-radius:999px;background:#fff;border:1px solid var(--line2);color:var(--ink2)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 16px 14px;margin:0 0 14px;box-shadow:0 1px 2px rgba(16,32,64,.04)}
+  .card h2{margin:0 0 12px;font-size:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .card h3{margin:16px 0 8px;font-size:14px;color:var(--ink2)}
+  .tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--brand2);color:var(--brand);border:1px solid #d3e3f5}
+  .tag.gray{background:#f1f3f6;color:var(--ink2);border-color:var(--line2)}
+  .field{margin-bottom:11px}
+  .field label{display:block;font-size:13px;color:var(--ink2);margin-bottom:4px}
+  .field label .sub{color:var(--ink3);font-size:12px}
+  input[type=text],select{width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:9px;font-size:14px;background:#fff;color:var(--ink);font-variant-numeric:tabular-nums}
+  input[type=text]:focus,select:focus{outline:2px solid #bcd8f0;border-color:var(--brand)}
+  input.bad,select.bad{border-color:var(--bad);background:var(--badbg)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  button{font:inherit;font-size:13px;padding:8px 12px;border-radius:9px;border:1px solid var(--line2);background:#fff;color:var(--ink);cursor:pointer}
+  button:hover{background:#f7f9fb}
+  button.primary{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+  button.primary:hover{background:#0d4f8a}
+  button.tiny{font-size:12px;padding:4px 8px}
+  .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+  .btns > *{min-width:0}
+  .footnote{font-size:12px;color:var(--ink3);margin-top:8px;line-height:1.55}
+  .footnote b{color:var(--ink2)}
+  table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+  th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+  th{color:var(--ink2);font-weight:600;background:#fafbfc;font-size:12px}
+  th:first-child,td:first-child{text-align:left;white-space:normal;word-break:break-word}
+  tbody tr.pick{cursor:pointer}
+  tbody tr.pick:hover{background:#f7f9fb}
+  tr.sum td{font-weight:700;background:#fafbfc;white-space:normal;line-height:1.35}
+  .tw{overflow-x:auto;max-width:100%}
+  #partTable{min-width:724px}
+  #partTable th:nth-child(1),#partTable td:nth-child(1){width:150px}
+  #partTable th:nth-child(2),#partTable td:nth-child(2){width:74px}
+  #partTable th:nth-child(3),#partTable td:nth-child(3){width:82px}
+  #partTable th:nth-child(4),#partTable td:nth-child(4){width:80px}
+  #partTable th:nth-child(5),#partTable td:nth-child(5){width:84px}
+  #partTable th:nth-child(6),#partTable td:nth-child(6){width:62px}
+  #partTable th:nth-child(7),#partTable td:nth-child(7){width:88px}
+  #partTable th:nth-child(8),#partTable td:nth-child(8){width:96px}
+  #partTable th:nth-child(9),#partTable td:nth-child(9){width:96px}
+  #cookTable{min-width:700px}
+  #cookTable th:nth-child(1),#cookTable td:nth-child(1){width:150px}
+  #sensTable{min-width:640px}
+  #revTable{min-width:600px}
+  .pill{display:inline-block;font-size:12.5px;font-weight:700;padding:3px 10px;border-radius:999px;border:1px solid}
+  .pill.ok{background:var(--goodbg);color:var(--good);border-color:#bfe3d2}
+  .pill.tight{background:var(--warnbg);color:var(--warn);border-color:#f0d9b5}
+  .pill.bad{background:var(--badbg);color:var(--bad);border-color:#f3c6c3}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:10px;margin:2px 0 6px}
+  .kpi{background:#fafbfc;border:1px solid var(--line);border-radius:10px;padding:9px 11px;min-width:0}
+  .kpi .lab{font-size:11.5px;color:var(--ink3)}
+  .kpi .val{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;word-break:break-word;line-height:1.3}
+  .kpi .note{font-size:11.5px;color:var(--ink3);margin-top:2px}
+  .kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:13.5px}
+  .kv .k{color:var(--ink3)}
+  .kv .v{min-width:0;word-break:break-word}
+  .ins{margin:0;padding:0;list-style:none}
+  .ins li{padding:9px 0;border-bottom:1px dashed var(--line)}
+  .ins li:last-child{border-bottom:0}
+  .ins b{display:block;font-size:14px;margin-bottom:2px}
+  .ins span{color:var(--ink2);font-size:13px}
+  .steps{margin:0;padding:0;list-style:none}
+  .steps li{padding:9px 0;border-bottom:1px dashed var(--line)}
+  .steps li:last-child{border-bottom:0}
+  .steps b{display:block;font-size:14px;margin-bottom:3px}
+  .steps span{color:var(--ink2);font-size:13px;display:block}
+  .warnbox{background:var(--warnbg);border:1px solid #f0d9b5;border-radius:10px;padding:10px 12px;font-size:13px;color:#6b3f00;margin-top:8px}
+  .errbox{background:var(--badbg);border:1px solid #f3c6c3;border-radius:10px;padding:10px 12px;font-size:13px;color:#7a1a12;margin-bottom:10px}
+  .errbox ul{margin:6px 0 0;padding-left:18px}
+  .okbox{background:var(--goodbg);border:1px solid #bfe3d2;border-radius:10px;padding:10px 12px;font-size:13px;color:#0b5c3e;margin-top:8px}
+  #chartWrap{border:1px solid var(--line);border-radius:10px;background:#fff;padding:6px 4px 2px}
+  #chart{display:block;width:100%;height:auto}
+  #chart svg{display:block;width:100%;max-width:100%;height:auto}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--ink2);margin:6px 2px 0}
+  .legend i{display:inline-block;width:13px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+  .checks{font-size:12.5px;margin:0;padding:0;list-style:none}
+  .checks li{margin:3px 0;color:var(--ink2);word-break:break-word}
+  .checks li b{color:var(--ink)}
+  .checks .no{color:var(--bad)}
+  .item{border:1px solid var(--line);border-radius:10px;padding:9px 10px;margin-bottom:9px;background:#fcfdfe}
+  .itemhead{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px;align-items:center;margin-bottom:7px}
+  .itemhead .idx{font-size:12px;color:var(--ink3);white-space:nowrap}
+  .itemhead input{padding:5px 7px;font-size:13px}
+  .gridp{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:7px}
+  .gridp label{display:block;font-size:11.5px;color:var(--ink3);line-height:1.4}
+  .gridp input{width:100%;padding:6px 8px;font-size:13px}
+  .partsum{font-size:12.5px;color:var(--ink2);margin:2px 0 8px}
+  .partsum b{font-variant-numeric:tabular-nums}
+  .partsum .bad{color:var(--bad);font-weight:700}
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#161b22;color:#fff;font-size:13px;padding:9px 16px;border-radius:999px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:99;max-width:86vw;text-align:center}
+  .scrollhint{display:none}
+  @media (max-width:900px){ .scrollhint{display:block;color:var(--brand)} }
+  #partTable tfoot td:nth-child(4){width:96px}
+  details.note{font-size:12.5px;color:var(--ink2);margin-top:8px}
+  details.note summary{cursor:pointer;color:var(--brand)}
+  details.note p{margin:6px 0 0}
+  code{background:#f1f3f6;border-radius:4px;padding:1px 4px;font-size:12.5px}
+  @media (max-width:900px){
+    .app{grid-template-columns:minmax(0,1fr);padding:16px 12px 48px}
+    h1{font-size:22px}
+    .row3{grid-template-columns:1fr 1fr}
+  }
+  @media (max-width:400px){
+    .row2,.row3{grid-template-columns:minmax(0,1fr)}
+  }
+  @media print{
+    body{background:#fff}
+    .btns,button,#toast,select{display:none!important}
+    .card{break-inside:avoid;box-shadow:none}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <h1>出成率对账台</h1>
+    <p class="lede">买一只整鸡、一条整鱼、一整扇排骨或一整条腿回家自己拆，还是直接买分部位的肉？——把「毛重到净料」的<b>出成率</b>、不可食损耗、处理成本与分部位市价摊成一本可以复算的账：整只买价与分部位市值之比（折扣率）、净料单价、按售价分摊的等效单价、回本最少部位数，以及熟制缩水后的熟食成本与临界熟制率。全部自己填，页面不联网。</p>
+    <div class="badges">
+      <span class="badge">出成率以毛重为基准</span>
+      <span class="badge">联合成本按相对售价法分摊</span>
+      <span class="badge">17 项结构自检每次重算都跑</span>
+      <span class="badge">价格与出成率全部由你填，不查行情</span>
+      <span class="badge">默认数据与 9 个内置场景都是虚构示例</span>
+    </div>
+  </header>
+
+  <section class="left">
+    <div class="card">
+      <h2>① 整只原料 <span class="tag gray" id="grossTag">—</span></h2>
+      <div class="field"><label>原料名称<span class="sub">只用于显示</span></label><input type="text" id="g-name"></div>
+      <div class="row3">
+        <div class="field"><label>毛重（kg）</label><input type="text" id="g-grossKg"></div>
+        <div class="field"><label>毛重单价（元/kg）</label><input type="text" id="g-pricePerKg"></div>
+        <div class="field"><label>处理成本（元）</label><input type="text" id="g-processCost"></div>
+      </div>
+      <p class="footnote">整只买价 <b id="boughtTxt">—</b> = 毛重 × 毛重单价；到手总成本 <b id="costTxt">—</b> = 整只买价 + 处理成本。处理成本填燃料、配料、人工这类一次性花费，它是唯一「不随毛重变」的钱，所以会单独影响折扣率。</p>
+    </div>
+
+    <div class="card">
+      <h2>② 部位与出成率 <span class="tag gray" id="partCount">—</span></h2>
+      <p class="footnote">每行填：这块占<b>毛重</b>的百分比、它单独买多少钱一公斤、它做熟之后剩多少（熟制率 100% = 不缩水）、以及成品熟食多少钱一公斤（填 0 = 不比熟食）。式子里没列到的部分自动当成不可食。</p>
+      <div id="parts"></div>
+      <div class="partsum">出成率合计 <b id="yieldTotal">—</b> ｜ 不可食 <b id="wasteTxt">—</b> <span id="yieldGap"></span></div>
+      <div class="btns">
+        <button id="btnAddPart" class="tiny">加一个部位</button>
+        <button id="btnDelPart" class="tiny">删最后一个部位</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>③ 目标与时间</h2>
+      <div class="row3">
+        <div class="field"><label>目标折扣率（%）</label><input type="text" id="g-targetDiscountPct"></div>
+        <div class="field"><label>处理耗时（分钟）</label><input type="text" id="g-minutes"></div>
+        <div class="field"><label>你的时间价格（元/h）</label><input type="text" id="g-hourlyRate"></div>
+      </div>
+      <p class="footnote">折扣率 <code>r = 到手总成本 ÷ 分部位市值合计</code>。<b>r &lt; 1 说明整只买得划算</b>；目标折扣率只是你自己划的一条线，用来反推「毛重单价至少要压到多少」。处理耗时与时间价格只用于把省下的钱折算成一个时薪，页面不替你决定时间值多少钱。</p>
+    </div>
+
+    <div class="card">
+      <h2>④ 场景与文件</h2>
+      <div class="field"><label>内置场景（全部为虚构示例）</label><select id="scenario"></select></div>
+      <div class="btns">
+        <button id="btnReset">恢复默认</button>
+        <button id="btnSave">保存到本机</button>
+        <button id="btnLoad">读取本机</button>
+      </div>
+      <div class="btns" style="margin-top:8px">
+        <label class="tiny" style="display:inline-block;border:1px solid var(--line2);border-radius:9px;padding:8px 12px;cursor:pointer;font-size:13px">
+          导入备份 JSON<input type="file" id="importFile" accept=".json,application/json" style="display:none">
+        </label>
+      </div>
+      <div class="btns" style="margin-top:8px">
+        <button id="btnCsv">导出 CSV</button>
+        <button id="btnMd">导出 Markdown</button>
+        <button id="btnPng">导出结果卡 PNG</button>
+        <button id="btnJson">导出备份 JSON</button>
+        <button id="btnPrint">打印</button>
+      </div>
+      <p class="footnote" id="storeNote">「保存到本机」写的是浏览器 localStorage，刷新后自动恢复；不上传任何数据。</p>
+    </div>
+  </section>
+
+  <section class="right">
+    <div id="errBox"></div>
+    <div class="card" id="resultCard">
+      <h2>结论 <span id="verdictPill">—</span></h2>
+      <div id="verdictDetail" class="kv"></div>
+      <div class="kpis" id="kpis"></div>
+      <p class="footnote" id="baselineNote"></p>
+    </div>
+
+    <div class="card">
+      <h2>各部位产值与成本覆盖 <span class="tag gray" id="chartTag">—</span></h2>
+      <div id="chartWrap"><div id="chart"></div></div>
+      <div class="legend">
+        <span><i style="background:#0f5fa6"></i>单块产值</span>
+        <span><i style="background:#9ec4e4"></i>累计产值</span>
+        <span><i style="background:#b42318"></i>到手总成本线</span>
+        <span><i style="background:#0f7b52"></i>回本所需的最后一块</span>
+      </div>
+      <p class="footnote">按产值从高到低排。红色竖线是到手总成本；累计条越过这条线的那一块，就是「回本最少部位数」说的那一块——它前面的都算添头。</p>
+    </div>
+
+    <div class="card">
+      <h2>要记住的几条</h2>
+      <ul class="ins" id="insights"></ul>
+    </div>
+
+    <div class="card">
+      <h2>下一步（能直接改到输入上）</h2>
+      <ul class="steps" id="steps"></ul>
+    </div>
+
+    <div class="card">
+      <h2>反推：价格与熟制的临界值 <span class="tag" id="revTag">—</span></h2>
+      <div id="revBox"></div>
+    </div>
+
+    <div class="card">
+      <h2>部位账（按清单顺序）</h2>
+      <p class="footnote scrollhint">表格比屏幕宽：左右滑动可以看到全部列（出成率 / 净重 / 市价 / 产值 / 占比 / 分摊成本 / 等效单价 / 省多付）。</p>
+      <div class="tw"><table id="partTable"><thead><tr>
+        <th>部位</th><th>出成率</th><th>净重</th><th>市价</th><th>产值</th><th>占比</th><th>分摊成本</th><th>等效单价</th><th>省（多付）</th>
+      </tr></thead><tbody id="partBody"></tbody>
+      <tfoot><tr class="sum"><td>合计</td><td id="tfYield">—</td><td id="tfNet">—</td><td id="tfWaste">—</td><td id="tfValue">—</td><td id="tfShare">—</td><td id="tfCost">—</td><td id="tfUnit">—</td><td id="tfSave">—</td></tr></tfoot></table></div>
+      <p class="footnote">合计行的「不可食」= 毛重里没有列进任何部位的部分（本页按 100% − 出成率合计 推得）。</p>
+      <details class="note"><summary>熟制账（熟重、熟食成本、临界熟制率）看这里</summary>
+        <p class="footnote scrollhint" style="margin-top:8px">表格比屏幕宽：左右滑动可以看到全部列。</p>
+        <div class="tw"><table id="cookTable"><thead><tr>
+          <th>部位</th><th>熟制率</th><th>熟重</th><th>熟食成本</th><th>成品熟食</th><th>每公斤省（多付）</th><th>临界熟制率</th>
+        </tr></thead><tbody id="cookBody"></tbody></table></div>
+        <p style="margin:6px 0 0">临界熟制率 = 折扣率 × 该部位市价 ÷ 成品熟食市价：熟制率掉到它以下，自制熟食就比直接买成品贵。填 0 表示不比熟食。</p>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>敏感性（每一行完整重算，不是插值）</h2>
+      <p class="footnote scrollhint">表格比屏幕宽：左右滑动可以看到全部列。</p>
+      <div class="tw"><table id="sensTable"><thead><tr>
+        <th>改法</th><th>折扣率 r</th><th>净料单价</th><th>省（多付）</th><th>回本部位数</th><th>判定</th>
+      </tr></thead><tbody id="sensBody"></tbody></table></div>
+    </div>
+
+    <div class="card">
+      <h2>结构自检 <span class="tag gray" id="checkTag">—</span></h2>
+      <ul class="checks" id="checks"></ul>
+      <p class="footnote">这 17 项在每次重算时都会跑一遍：恒等式（分摊合计 = 总成本、等效单价 = r × 市价、净料单价 = r × 加权平均市价）、量纲（净重 + 不可食 = 毛重）、回本部位数的最优性、熟制率回代、单调性与无 NaN。它们只证明这本账内部自洽，你的输入是不是真的，仍要你自己核查。</p>
+    </div>
+
+    <div class="card">
+      <h2>这本账算不了什么</h2>
+      <ul class="checks">
+        <li>出成率、市价、熟制率、处理成本<b>全部由你填</b>：不联网、不查行情、不预测价格、不替你判断食材新鲜与否。</li>
+        <li>不做<b>食品卫生与安全</b>判定：能不能吃、熟没熟、放多久，不在本页范围。</li>
+        <li>「联合成本按相对售价法分摊」是一种<b>会计口径</b>，不是唯一正确答案：同样的钱也可以按重量分摊（本页的恒等式会告诉你两者不同）。</li>
+        <li>熟制只按<b>质量缩水</b>这一个因素算，不建模成分流失、不建模调味料与能源成本（要算就并进处理成本）。</li>
+        <li><b>折扣率是决定性的量</b>：同一份清单里所有部位的「等效单价 ÷ 市价」都等于同一个 r，所以「哪个部位自己拆更划算」不是这本账能回答的问题。</li>
+        <li>不含运费、税费、包装、冰箱电费与存放损耗；剩余部位吃不完导致的浪费要你自己按「回本最少部位数」判断。</li>
+      </ul>
+    </div>
+  </section>
+</div>
+<div id="toast"></div>
+<script>/*CORE*/</script>
+<script>/*UI*/</script>
+</body>
+</html>

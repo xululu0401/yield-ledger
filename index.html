@@ -1,0 +1,1688 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>出成率对账台 · 买整只自己拆，还是直接买分部位</title>
+<meta name="description" content="买一只整鸡整鸭整鱼、一整扇排骨或一整条腿，拆开卖的分部位价格差得离谱：自己拆到底省不省？把出成率、不可食损耗、处理成本与分部位市价摊成一本账：折扣率、净料单价、按售价分摊的等效单价、回本最少部位数、熟制缩水后的熟食成本与临界熟制率，外加盈亏平衡价的闭式反推。全部自己填，页面不联网。">
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#fff; --ink:#161b22; --ink2:#4a5568; --ink3:#7b8794;
+    --line:#e3e6eb; --line2:#cbd2da; --brand:#0f5fa6; --brand2:#eaf2fa;
+    --good:#0f7b52; --goodbg:#e8f6ef; --warn:#9a5b00; --warnbg:#fff5e5; --bad:#b42318; --badbg:#fdeceb;
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+  .app{max-width:1340px;margin:0 auto;padding:22px 18px 60px;display:grid;grid-template-columns:436px minmax(0,1fr);gap:18px;align-items:start}
+  .app > *{min-width:0}
+  header.top{grid-column:1/-1;padding:4px 2px 0}
+  h1{margin:0 0 6px;font-size:26px;letter-spacing:.2px}
+  .lede{margin:0;color:var(--ink2);max-width:960px}
+  .badges{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px}
+  .badge{font-size:12px;padding:3px 9px;border-radius:999px;background:#fff;border:1px solid var(--line2);color:var(--ink2)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 16px 14px;margin:0 0 14px;box-shadow:0 1px 2px rgba(16,32,64,.04)}
+  .card h2{margin:0 0 12px;font-size:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .card h3{margin:16px 0 8px;font-size:14px;color:var(--ink2)}
+  .tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--brand2);color:var(--brand);border:1px solid #d3e3f5}
+  .tag.gray{background:#f1f3f6;color:var(--ink2);border-color:var(--line2)}
+  .field{margin-bottom:11px}
+  .field label{display:block;font-size:13px;color:var(--ink2);margin-bottom:4px}
+  .field label .sub{color:var(--ink3);font-size:12px}
+  input[type=text],select{width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:9px;font-size:14px;background:#fff;color:var(--ink);font-variant-numeric:tabular-nums}
+  input[type=text]:focus,select:focus{outline:2px solid #bcd8f0;border-color:var(--brand)}
+  input.bad,select.bad{border-color:var(--bad);background:var(--badbg)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  button{font:inherit;font-size:13px;padding:8px 12px;border-radius:9px;border:1px solid var(--line2);background:#fff;color:var(--ink);cursor:pointer}
+  button:hover{background:#f7f9fb}
+  button.primary{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+  button.primary:hover{background:#0d4f8a}
+  button.tiny{font-size:12px;padding:4px 8px}
+  .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+  .btns > *{min-width:0}
+  .footnote{font-size:12px;color:var(--ink3);margin-top:8px;line-height:1.55}
+  .footnote b{color:var(--ink2)}
+  table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+  th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+  th{color:var(--ink2);font-weight:600;background:#fafbfc;font-size:12px}
+  th:first-child,td:first-child{text-align:left;white-space:normal;word-break:break-word}
+  tbody tr.pick{cursor:pointer}
+  tbody tr.pick:hover{background:#f7f9fb}
+  tr.sum td{font-weight:700;background:#fafbfc;white-space:normal;line-height:1.35}
+  .tw{overflow-x:auto;max-width:100%}
+  #partTable{min-width:724px}
+  #partTable th:nth-child(1),#partTable td:nth-child(1){width:150px}
+  #partTable th:nth-child(2),#partTable td:nth-child(2){width:74px}
+  #partTable th:nth-child(3),#partTable td:nth-child(3){width:82px}
+  #partTable th:nth-child(4),#partTable td:nth-child(4){width:80px}
+  #partTable th:nth-child(5),#partTable td:nth-child(5){width:84px}
+  #partTable th:nth-child(6),#partTable td:nth-child(6){width:62px}
+  #partTable th:nth-child(7),#partTable td:nth-child(7){width:88px}
+  #partTable th:nth-child(8),#partTable td:nth-child(8){width:96px}
+  #partTable th:nth-child(9),#partTable td:nth-child(9){width:96px}
+  #cookTable{min-width:700px}
+  #cookTable th:nth-child(1),#cookTable td:nth-child(1){width:150px}
+  #sensTable{min-width:640px}
+  #revTable{min-width:600px}
+  .pill{display:inline-block;font-size:12.5px;font-weight:700;padding:3px 10px;border-radius:999px;border:1px solid}
+  .pill.ok{background:var(--goodbg);color:var(--good);border-color:#bfe3d2}
+  .pill.tight{background:var(--warnbg);color:var(--warn);border-color:#f0d9b5}
+  .pill.bad{background:var(--badbg);color:var(--bad);border-color:#f3c6c3}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:10px;margin:2px 0 6px}
+  .kpi{background:#fafbfc;border:1px solid var(--line);border-radius:10px;padding:9px 11px;min-width:0}
+  .kpi .lab{font-size:11.5px;color:var(--ink3)}
+  .kpi .val{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;word-break:break-word;line-height:1.3}
+  .kpi .note{font-size:11.5px;color:var(--ink3);margin-top:2px}
+  .kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:13.5px}
+  .kv .k{color:var(--ink3)}
+  .kv .v{min-width:0;word-break:break-word}
+  .ins{margin:0;padding:0;list-style:none}
+  .ins li{padding:9px 0;border-bottom:1px dashed var(--line)}
+  .ins li:last-child{border-bottom:0}
+  .ins b{display:block;font-size:14px;margin-bottom:2px}
+  .ins span{color:var(--ink2);font-size:13px}
+  .steps{margin:0;padding:0;list-style:none}
+  .steps li{padding:9px 0;border-bottom:1px dashed var(--line)}
+  .steps li:last-child{border-bottom:0}
+  .steps b{display:block;font-size:14px;margin-bottom:3px}
+  .steps span{color:var(--ink2);font-size:13px;display:block}
+  .warnbox{background:var(--warnbg);border:1px solid #f0d9b5;border-radius:10px;padding:10px 12px;font-size:13px;color:#6b3f00;margin-top:8px}
+  .errbox{background:var(--badbg);border:1px solid #f3c6c3;border-radius:10px;padding:10px 12px;font-size:13px;color:#7a1a12;margin-bottom:10px}
+  .errbox ul{margin:6px 0 0;padding-left:18px}
+  .okbox{background:var(--goodbg);border:1px solid #bfe3d2;border-radius:10px;padding:10px 12px;font-size:13px;color:#0b5c3e;margin-top:8px}
+  #chartWrap{border:1px solid var(--line);border-radius:10px;background:#fff;padding:6px 4px 2px}
+  #chart{display:block;width:100%;height:auto}
+  #chart svg{display:block;width:100%;max-width:100%;height:auto}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--ink2);margin:6px 2px 0}
+  .legend i{display:inline-block;width:13px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+  .checks{font-size:12.5px;margin:0;padding:0;list-style:none}
+  .checks li{margin:3px 0;color:var(--ink2);word-break:break-word}
+  .checks li b{color:var(--ink)}
+  .checks .no{color:var(--bad)}
+  .item{border:1px solid var(--line);border-radius:10px;padding:9px 10px;margin-bottom:9px;background:#fcfdfe}
+  .itemhead{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px;align-items:center;margin-bottom:7px}
+  .itemhead .idx{font-size:12px;color:var(--ink3);white-space:nowrap}
+  .itemhead input{padding:5px 7px;font-size:13px}
+  .gridp{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:7px}
+  .gridp label{display:block;font-size:11.5px;color:var(--ink3);line-height:1.4}
+  .gridp input{width:100%;padding:6px 8px;font-size:13px}
+  .partsum{font-size:12.5px;color:var(--ink2);margin:2px 0 8px}
+  .partsum b{font-variant-numeric:tabular-nums}
+  .partsum .bad{color:var(--bad);font-weight:700}
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#161b22;color:#fff;font-size:13px;padding:9px 16px;border-radius:999px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:99;max-width:86vw;text-align:center}
+  .scrollhint{display:none}
+  @media (max-width:900px){ .scrollhint{display:block;color:var(--brand)} }
+  #partTable tfoot td:nth-child(4){width:96px}
+  details.note{font-size:12.5px;color:var(--ink2);margin-top:8px}
+  details.note summary{cursor:pointer;color:var(--brand)}
+  details.note p{margin:6px 0 0}
+  code{background:#f1f3f6;border-radius:4px;padding:1px 4px;font-size:12.5px}
+  @media (max-width:900px){
+    .app{grid-template-columns:minmax(0,1fr);padding:16px 12px 48px}
+    h1{font-size:22px}
+    .row3{grid-template-columns:1fr 1fr}
+  }
+  @media (max-width:400px){
+    .row2,.row3{grid-template-columns:minmax(0,1fr)}
+  }
+  @media print{
+    body{background:#fff}
+    .btns,button,#toast,select{display:none!important}
+    .card{break-inside:avoid;box-shadow:none}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <h1>出成率对账台</h1>
+    <p class="lede">买一只整鸡、一条整鱼、一整扇排骨或一整条腿回家自己拆，还是直接买分部位的肉？——把「毛重到净料」的<b>出成率</b>、不可食损耗、处理成本与分部位市价摊成一本可以复算的账：整只买价与分部位市值之比（折扣率）、净料单价、按售价分摊的等效单价、回本最少部位数，以及熟制缩水后的熟食成本与临界熟制率。全部自己填，页面不联网。</p>
+    <div class="badges">
+      <span class="badge">出成率以毛重为基准</span>
+      <span class="badge">联合成本按相对售价法分摊</span>
+      <span class="badge">17 项结构自检每次重算都跑</span>
+      <span class="badge">价格与出成率全部由你填，不查行情</span>
+      <span class="badge">默认数据与 9 个内置场景都是虚构示例</span>
+    </div>
+  </header>
+
+  <section class="left">
+    <div class="card">
+      <h2>① 整只原料 <span class="tag gray" id="grossTag">—</span></h2>
+      <div class="field"><label>原料名称<span class="sub">只用于显示</span></label><input type="text" id="g-name"></div>
+      <div class="row3">
+        <div class="field"><label>毛重（kg）</label><input type="text" id="g-grossKg"></div>
+        <div class="field"><label>毛重单价（元/kg）</label><input type="text" id="g-pricePerKg"></div>
+        <div class="field"><label>处理成本（元）</label><input type="text" id="g-processCost"></div>
+      </div>
+      <p class="footnote">整只买价 <b id="boughtTxt">—</b> = 毛重 × 毛重单价；到手总成本 <b id="costTxt">—</b> = 整只买价 + 处理成本。处理成本填燃料、配料、人工这类一次性花费，它是唯一「不随毛重变」的钱，所以会单独影响折扣率。</p>
+    </div>
+
+    <div class="card">
+      <h2>② 部位与出成率 <span class="tag gray" id="partCount">—</span></h2>
+      <p class="footnote">每行填：这块占<b>毛重</b>的百分比、它单独买多少钱一公斤、它做熟之后剩多少（熟制率 100% = 不缩水）、以及成品熟食多少钱一公斤（填 0 = 不比熟食）。式子里没列到的部分自动当成不可食。</p>
+      <div id="parts"></div>
+      <div class="partsum">出成率合计 <b id="yieldTotal">—</b> ｜ 不可食 <b id="wasteTxt">—</b> <span id="yieldGap"></span></div>
+      <div class="btns">
+        <button id="btnAddPart" class="tiny">加一个部位</button>
+        <button id="btnDelPart" class="tiny">删最后一个部位</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>③ 目标与时间</h2>
+      <div class="row3">
+        <div class="field"><label>目标折扣率（%）</label><input type="text" id="g-targetDiscountPct"></div>
+        <div class="field"><label>处理耗时（分钟）</label><input type="text" id="g-minutes"></div>
+        <div class="field"><label>你的时间价格（元/h）</label><input type="text" id="g-hourlyRate"></div>
+      </div>
+      <p class="footnote">折扣率 <code>r = 到手总成本 ÷ 分部位市值合计</code>。<b>r &lt; 1 说明整只买得划算</b>；目标折扣率只是你自己划的一条线，用来反推「毛重单价至少要压到多少」。处理耗时与时间价格只用于把省下的钱折算成一个时薪，页面不替你决定时间值多少钱。</p>
+    </div>
+
+    <div class="card">
+      <h2>④ 场景与文件</h2>
+      <div class="field"><label>内置场景（全部为虚构示例）</label><select id="scenario"></select></div>
+      <div class="btns">
+        <button id="btnReset">恢复默认</button>
+        <button id="btnSave">保存到本机</button>
+        <button id="btnLoad">读取本机</button>
+      </div>
+      <div class="btns" style="margin-top:8px">
+        <label class="tiny" style="display:inline-block;border:1px solid var(--line2);border-radius:9px;padding:8px 12px;cursor:pointer;font-size:13px">
+          导入备份 JSON<input type="file" id="importFile" accept=".json,application/json" style="display:none">
+        </label>
+      </div>
+      <div class="btns" style="margin-top:8px">
+        <button id="btnCsv">导出 CSV</button>
+        <button id="btnMd">导出 Markdown</button>
+        <button id="btnPng">导出结果卡 PNG</button>
+        <button id="btnJson">导出备份 JSON</button>
+        <button id="btnPrint">打印</button>
+      </div>
+      <p class="footnote" id="storeNote">「保存到本机」写的是浏览器 localStorage，刷新后自动恢复；不上传任何数据。</p>
+    </div>
+  </section>
+
+  <section class="right">
+    <div id="errBox"></div>
+    <div class="card" id="resultCard">
+      <h2>结论 <span id="verdictPill">—</span></h2>
+      <div id="verdictDetail" class="kv"></div>
+      <div class="kpis" id="kpis"></div>
+      <p class="footnote" id="baselineNote"></p>
+    </div>
+
+    <div class="card">
+      <h2>各部位产值与成本覆盖 <span class="tag gray" id="chartTag">—</span></h2>
+      <div id="chartWrap"><div id="chart"></div></div>
+      <div class="legend">
+        <span><i style="background:#0f5fa6"></i>单块产值</span>
+        <span><i style="background:#9ec4e4"></i>累计产值</span>
+        <span><i style="background:#b42318"></i>到手总成本线</span>
+        <span><i style="background:#0f7b52"></i>回本所需的最后一块</span>
+      </div>
+      <p class="footnote">按产值从高到低排。红色竖线是到手总成本；累计条越过这条线的那一块，就是「回本最少部位数」说的那一块——它前面的都算添头。</p>
+    </div>
+
+    <div class="card">
+      <h2>要记住的几条</h2>
+      <ul class="ins" id="insights"></ul>
+    </div>
+
+    <div class="card">
+      <h2>下一步（能直接改到输入上）</h2>
+      <ul class="steps" id="steps"></ul>
+    </div>
+
+    <div class="card">
+      <h2>反推：价格与熟制的临界值 <span class="tag" id="revTag">—</span></h2>
+      <div id="revBox"></div>
+    </div>
+
+    <div class="card">
+      <h2>部位账（按清单顺序）</h2>
+      <p class="footnote scrollhint">表格比屏幕宽：左右滑动可以看到全部列（出成率 / 净重 / 市价 / 产值 / 占比 / 分摊成本 / 等效单价 / 省多付）。</p>
+      <div class="tw"><table id="partTable"><thead><tr>
+        <th>部位</th><th>出成率</th><th>净重</th><th>市价</th><th>产值</th><th>占比</th><th>分摊成本</th><th>等效单价</th><th>省（多付）</th>
+      </tr></thead><tbody id="partBody"></tbody>
+      <tfoot><tr class="sum"><td>合计</td><td id="tfYield">—</td><td id="tfNet">—</td><td id="tfWaste">—</td><td id="tfValue">—</td><td id="tfShare">—</td><td id="tfCost">—</td><td id="tfUnit">—</td><td id="tfSave">—</td></tr></tfoot></table></div>
+      <p class="footnote">合计行的「不可食」= 毛重里没有列进任何部位的部分（本页按 100% − 出成率合计 推得）。</p>
+      <details class="note"><summary>熟制账（熟重、熟食成本、临界熟制率）看这里</summary>
+        <p class="footnote scrollhint" style="margin-top:8px">表格比屏幕宽：左右滑动可以看到全部列。</p>
+        <div class="tw"><table id="cookTable"><thead><tr>
+          <th>部位</th><th>熟制率</th><th>熟重</th><th>熟食成本</th><th>成品熟食</th><th>每公斤省（多付）</th><th>临界熟制率</th>
+        </tr></thead><tbody id="cookBody"></tbody></table></div>
+        <p style="margin:6px 0 0">临界熟制率 = 折扣率 × 该部位市价 ÷ 成品熟食市价：熟制率掉到它以下，自制熟食就比直接买成品贵。填 0 表示不比熟食。</p>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>敏感性（每一行完整重算，不是插值）</h2>
+      <p class="footnote scrollhint">表格比屏幕宽：左右滑动可以看到全部列。</p>
+      <div class="tw"><table id="sensTable"><thead><tr>
+        <th>改法</th><th>折扣率 r</th><th>净料单价</th><th>省（多付）</th><th>回本部位数</th><th>判定</th>
+      </tr></thead><tbody id="sensBody"></tbody></table></div>
+    </div>
+
+    <div class="card">
+      <h2>结构自检 <span class="tag gray" id="checkTag">—</span></h2>
+      <ul class="checks" id="checks"></ul>
+      <p class="footnote">这 17 项在每次重算时都会跑一遍：恒等式（分摊合计 = 总成本、等效单价 = r × 市价、净料单价 = r × 加权平均市价）、量纲（净重 + 不可食 = 毛重）、回本部位数的最优性、熟制率回代、单调性与无 NaN。它们只证明这本账内部自洽，你的输入是不是真的，仍要你自己核查。</p>
+    </div>
+
+    <div class="card">
+      <h2>这本账算不了什么</h2>
+      <ul class="checks">
+        <li>出成率、市价、熟制率、处理成本<b>全部由你填</b>：不联网、不查行情、不预测价格、不替你判断食材新鲜与否。</li>
+        <li>不做<b>食品卫生与安全</b>判定：能不能吃、熟没熟、放多久，不在本页范围。</li>
+        <li>「联合成本按相对售价法分摊」是一种<b>会计口径</b>，不是唯一正确答案：同样的钱也可以按重量分摊（本页的恒等式会告诉你两者不同）。</li>
+        <li>熟制只按<b>质量缩水</b>这一个因素算，不建模成分流失、不建模调味料与能源成本（要算就并进处理成本）。</li>
+        <li><b>折扣率是决定性的量</b>：同一份清单里所有部位的「等效单价 ÷ 市价」都等于同一个 r，所以「哪个部位自己拆更划算」不是这本账能回答的问题。</li>
+        <li>不含运费、税费、包装、冰箱电费与存放损耗；剩余部位吃不完导致的浪费要你自己按「回本最少部位数」判断。</li>
+      </ul>
+    </div>
+  </section>
+</div>
+<div id="toast"></div>
+<script>/* 出成率对账台 · core.js
+ * 把「买整只回来自己拆」还是「直接买分部位」算成一本可以复算的账。
+ *
+ * ── 需求简报（详见 ../需求与调研.md） ─────────────────────────────
+ * 输入范围与单位：
+ *   grossKg 毛重 kg (0, 100000]；pricePerKg 毛重单价 元/kg (0, 1e6]；processCost 处理成本 元 [0, 1e6]
+ *   parts[].yieldPct 出成率 % [0,100]（以毛重为基准）；pricePerKg 分部位市价 元/kg [0, 1e6]
+ *   parts[].cookPct 熟制率 % (0, 300]；cookedPricePerKg 成品熟食市价 元/kg [0, 1e6]
+ *   targetDiscountPct 目标折扣率 % [1, 200]；minutes 处理耗时 分钟 [0, 1e5]；hourlyRate 你的时间价格 元/h [0, 1e6]
+ * 模型假设：
+ *   A1 出成率以毛重为基准，不可食/未列出的部分 = 毛重 × (1 − Σ出成率)；不重复计列。
+ *   A2 分部位市价由用户填，页面不联网、不查行情、不预测价格。
+ *   A3 联合成本按「相对售价法」(sales value at split-off) 分摊：C_i = C总 × V_i / V总。
+ *   A4 熟制只按质量缩水，不建模成分流失、不建模调味料（要算就填进处理成本）。
+ * 关键公式：
+ *   B = W·p_W（整只买价）        C = B + P（到手总成本）
+ *   w_i = W·y_i                  净料总重 = Σw_i = W·Σy_i
+ *   V_i = w_i·p_i                V = ΣV_i
+ *   r = C / V（折扣率）          分摊 C_i = C·V_i/V   → 等效单价 = C_i/w_i = r·p_i
+ *   省下 = V − C = (1−r)·V       净料单价 = C/Σw_i = r × (按净重加权的平均市价)
+ *   熟重 = w_i·z_i               熟食成本单价 = C_i/熟重
+ *   临界熟制率 z* = r·p_i / q_i  （自制熟食要便宜过买成品，熟制率必须高于它）
+ *   盈亏平衡毛重单价（r=1）= (V − P)/W；不含处理成本口径 = V/W
+ *   目标折扣率 x% 下的毛重单价上限 = (x%·V − P)/W
+ *   回本最少部位数 k：按产值降序累加，首个 ≥ C 的前缀长度
+ * 输出定义：判定三档（整只更省 / 基本持平 / 分部位更省）+ KPI + 部位账 + 帕累托集中度 +
+ *           反推（盈亏平衡价、目标价上限、单块回本单价、临界熟制率、折算时薪）+ 敏感性 + 15 项结构自检
+ * 默认场景：虚构白羽鸭 2.50 kg × 22.00 元/kg，6 个部位，处理成本 6 元 —— 明确是虚构示例
+ * 边界：Σ出成率 > 100 报错；Σ出成率 = 0 报错（无净料，不返回 Infinity）；V = 0 → 折扣率记 null 不可判定；
+ *       熟制率 0 → 熟食成本记 null 不可比较；部位数 1..12；W 与价格必须为正
+ * 无法处理：不做食品卫生与安全判定、不判断是否新鲜、不查实时菜价、不预测行情、
+ *           不判断「值不值得花时间」（只按你填的时间价格折算，不替你决定）
+ */
+(function () {
+  'use strict';
+  const root = typeof window !== 'undefined' ? window : null;
+
+  const SLUG = 'yield-ledger';
+  const NAME = '出成率对账台';
+  const VERSION = '1.0.0';
+  const PART_MAX = 12;
+  const PART_MIN = 1;
+
+  /* ── 数值解析与格式化 ───────────────────────────── */
+  function num(v) {
+    if (typeof v === 'number') return Number.isFinite(v) ? v : NaN;
+    if (v === null || v === undefined) return NaN;
+    let s = String(v).trim();
+    if (!s) return NaN;
+    s = s.replace(/[，,\s\u00a0]/g, '').replace(/[−–—]/g, '-').replace(/％/g, '%').replace(/[０-９．]/g, (ch) =>
+      String.fromCharCode(ch.charCodeAt(0) - 0xfee0)).replace(/。$/, '');
+    if (!/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(s)) return NaN;
+    const n = parseFloat(s);
+    return Number.isFinite(n) ? n : NaN;
+  }
+  const clampNum = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+  const sum = (a) => a.reduce((x, y) => x + y, 0);
+  const round = (x, d) => { const m = Math.pow(10, d); return Math.round((x + Number.EPSILON * Math.abs(x)) * m) / m; };
+
+  /* 自适应格式：极小非零值不显示成 0.00（如实标出量级） */
+  function fmtNum(x, d) {
+    if (x === null || x === undefined || !Number.isFinite(x)) return '—';
+    const a = Math.abs(x);
+    const p = d === undefined ? 2 : d;
+    if (a !== 0 && a < Math.pow(10, -p) / 2) return '< ' + (Math.pow(10, -p) / 2).toFixed(p);
+    if (a >= 1e15) return x.toExponential(3);   // 再大就真的读不动了，如实标成科学计数
+    // 千分位分组（含负数与大额），比科学计数更接近一般人读金额的习惯
+    return x.toLocaleString('zh-CN', { minimumFractionDigits: p, maximumFractionDigits: p });
+  }
+  const fmtMoney = (x) => (x === null || x === undefined || !Number.isFinite(x)) ? '—' : fmtNum(x, 2) + ' 元';
+  const fmtMoney0 = (x) => (x === null || x === undefined || !Number.isFinite(x)) ? '—' : fmtNum(x, 2);
+  const fmtKg = (x) => (x === null || x === undefined || !Number.isFinite(x)) ? '—' : fmtNum(x, 3) + ' kg';
+  const fmtUnit = (x) => (x === null || x === undefined || !Number.isFinite(x)) ? '—' : fmtNum(x, 2) + ' 元/kg';
+  const fmtPct = (x, d) => (x === null || x === undefined || !Number.isFinite(x)) ? '—' : fmtNum(x, d === undefined ? 1 : d) + '%';
+
+  /* ── 默认配置与场景（全部为虚构示例，价格不是行情） ── */
+  function defaults() {
+    return {
+      name: '整只白羽鸭（虚构示例）',
+      grossKg: 2.5,
+      pricePerKg: 22,
+      processCost: 6,
+      targetDiscountPct: 70,
+      minutes: 50,
+      hourlyRate: 40,
+      parts: [
+        { name: '鸭胸', yieldPct: 26, pricePerKg: 55, cookPct: 70, cookedPricePerKg: 62 },
+        { name: '鸭腿', yieldPct: 22, pricePerKg: 45, cookPct: 72, cookedPricePerKg: 58 },
+        { name: '鸭翅', yieldPct: 12, pricePerKg: 60, cookPct: 88, cookedPricePerKg: 78 },
+        { name: '鸭头脖', yieldPct: 10, pricePerKg: 30, cookPct: 92, cookedPricePerKg: 42 },
+        { name: '鸭架', yieldPct: 15, pricePerKg: 16, cookPct: 100, cookedPricePerKg: 0 },
+        { name: '鸭油鸭皮', yieldPct: 7, pricePerKg: 20, cookPct: 45, cookedPricePerKg: 0 },
+      ],
+    };
+  }
+
+  const SCENARIOS = [
+    { id: 'duck', name: '整只白羽鸭（虚构示例 · 默认）', cfg: defaults },
+    {
+      id: 'grasscarp', name: '一条草鱼 · 鱼柳 vs 整条（虚构示例）',
+      cfg: () => ({
+        name: '一条草鱼（虚构示例）', grossKg: 2.2, pricePerKg: 15, processCost: 0,
+        targetDiscountPct: 70, minutes: 25, hourlyRate: 40,
+        parts: [
+          { name: '净鱼柳', yieldPct: 34, pricePerKg: 46, cookPct: 88, cookedPricePerKg: 68 },
+          { name: '鱼头', yieldPct: 16, pricePerKg: 24, cookPct: 95, cookedPricePerKg: 0 },
+          { name: '鱼骨鱼尾', yieldPct: 20, pricePerKg: 8, cookPct: 100, cookedPricePerKg: 0 },
+          { name: '鱼皮', yieldPct: 4, pricePerKg: 18, cookPct: 80, cookedPricePerKg: 0 },
+        ],
+      }),
+    },
+    {
+      id: 'lamb', name: '整只羊腿 · 剔骨分块（虚构示例）',
+      cfg: () => ({
+        name: '整只羊前腿（虚构示例）', grossKg: 4.6, pricePerKg: 44, processCost: 12,
+        targetDiscountPct: 80, minutes: 90, hourlyRate: 45,
+        parts: [
+          { name: '羊腿肉（净）', yieldPct: 46, pricePerKg: 72, cookPct: 62, cookedPricePerKg: 118 },
+          { name: '羊排块', yieldPct: 20, pricePerKg: 88, cookPct: 70, cookedPricePerKg: 138 },
+          { name: '羊骨（炖汤）', yieldPct: 24, pricePerKg: 12, cookPct: 100, cookedPricePerKg: 0 },
+          { name: '油膘筋皮', yieldPct: 6, pricePerKg: 14, cookPct: 60, cookedPricePerKg: 0 },
+        ],
+      }),
+    },
+    {
+      id: 'beefshank', name: '整条牛腱 · 卤一锅（虚构示例）',
+      cfg: () => ({
+        name: '整条牛腱子（虚构示例）', grossKg: 1.8, pricePerKg: 73, processCost: 26,
+        targetDiscountPct: 70, minutes: 150, hourlyRate: 45,
+        parts: [
+          { name: '腱子肉', yieldPct: 88, pricePerKg: 96, cookPct: 62, cookedPricePerKg: 158 },
+          { name: '筋膜碎肉', yieldPct: 6, pricePerKg: 40, cookPct: 70, cookedPricePerKg: 90 },
+        ],
+      }),
+    },
+    {
+      id: 'salmon', name: '整条三文鱼 · 刺身与边角（虚构示例）',
+      cfg: () => ({
+        name: '整条三文鱼（虚构示例）', grossKg: 3.2, pricePerKg: 95, processCost: 10,
+        targetDiscountPct: 70, minutes: 45, hourlyRate: 50,
+        parts: [
+          { name: '中段刺身', yieldPct: 38, pricePerKg: 220, cookPct: 92, cookedPricePerKg: 300 },
+          { name: '背肉边角（煎）', yieldPct: 22, pricePerKg: 120, cookPct: 82, cookedPricePerKg: 168 },
+          { name: '鱼头鱼骨（汤）', yieldPct: 20, pricePerKg: 20, cookPct: 100, cookedPricePerKg: 0 },
+          { name: '鱼皮（烤）', yieldPct: 8, pricePerKg: 26, cookPct: 62, cookedPricePerKg: 0 },
+        ],
+      }),
+    },
+    {
+      id: 'wholechicken_dear', name: '反例：整只反而更贵（虚构示例）',
+      cfg: () => ({
+        name: '一只散养鸡（虚构示例 · 整只价偏高）', grossKg: 1.6, pricePerKg: 68, processCost: 6,
+        targetDiscountPct: 70, minutes: 40, hourlyRate: 40,
+        parts: [
+          { name: '鸡腿', yieldPct: 24, pricePerKg: 46, cookPct: 74, cookedPricePerKg: 70 },
+          { name: '鸡翅', yieldPct: 10, pricePerKg: 52, cookPct: 86, cookedPricePerKg: 84 },
+          { name: '鸡胸', yieldPct: 22, pricePerKg: 38, cookPct: 68, cookedPricePerKg: 66 },
+          { name: '鸡架', yieldPct: 26, pricePerKg: 10, cookPct: 100, cookedPricePerKg: 0 },
+          { name: '鸡爪鸡脖', yieldPct: 9, pricePerKg: 30, cookPct: 90, cookedPricePerKg: 46 },
+        ],
+      }),
+    },
+    {
+      id: 'bulkpork', name: '批发整扇排骨 · 大分量（虚构示例）',
+      cfg: () => ({
+        name: '整扇猪肋排（虚构示例 · 批发）', grossKg: 9.5, pricePerKg: 32, processCost: 15,
+        targetDiscountPct: 75, minutes: 120, hourlyRate: 50,
+        parts: [
+          { name: '精肋排', yieldPct: 44, pricePerKg: 58, cookPct: 78, cookedPricePerKg: 96 },
+          { name: '带骨边排', yieldPct: 22, pricePerKg: 36, cookPct: 80, cookedPricePerKg: 62 },
+          { name: '脊骨', yieldPct: 18, pricePerKg: 14, cookPct: 100, cookedPricePerKg: 0 },
+          { name: '板油碎肉', yieldPct: 8, pricePerKg: 18, cookPct: 55, cookedPricePerKg: 0 },
+        ],
+      }),
+    },
+    {
+      id: 'zerowaste', name: '出成率合计正好 100%（虚构示例）',
+      cfg: () => ({
+        name: '去壳净虾仁（虚构示例 · 零不可食）', grossKg: 1.5, pricePerKg: 88, processCost: 0,
+        targetDiscountPct: 70, minutes: 30, hourlyRate: 45,
+        parts: [
+          { name: '虾仁', yieldPct: 62, pricePerKg: 168, cookPct: 86, cookedPricePerKg: 210 },
+          { name: '虾头虾壳（熬油）', yieldPct: 34, pricePerKg: 10, cookPct: 100, cookedPricePerKg: 0 },
+          { name: '虾线杂质', yieldPct: 4, pricePerKg: 2, cookPct: 100, cookedPricePerKg: 0 },
+        ],
+      }),
+    },
+    {
+      id: 'hardcook', name: '熟制缩水严重 · 熟食不划算（虚构示例）',
+      cfg: () => ({
+        name: '整块牛腩（虚构示例 · 长时间炖煮）', grossKg: 2.4, pricePerKg: 58, processCost: 30,
+        targetDiscountPct: 70, minutes: 180, hourlyRate: 45,
+        parts: [
+          { name: '牛腩块', yieldPct: 90, pricePerKg: 82, cookPct: 48, cookedPricePerKg: 96 },
+          { name: '筋膜', yieldPct: 8, pricePerKg: 26, cookPct: 60, cookedPricePerKg: 60 },
+        ],
+      }),
+    },
+  ];
+
+  const scenarioCfg = (id) => {
+    const s = SCENARIOS.filter((x) => x.id === id)[0];
+    return s ? s.cfg() : defaults();
+  };
+
+  /* ── 归一化 ─────────────────────────────────────── */
+  function normCfg(raw) {
+    const r = raw && typeof raw === 'object' ? raw : {};
+    const d = defaults();
+    // 显式传空数组时保持为空、超过上限也不截断——两种情况都交给 validate 明确报错，
+    // 不静默回落默认值、也不静默丢掉多出来的行（历史教训：静默兜底会掩盖输入错误）
+    const parts = Array.isArray(r.parts) ? r.parts : d.parts;
+    return {
+      name: r.name === undefined || r.name === null ? d.name : String(r.name).slice(0, 60),
+      grossKg: r.grossKg === undefined ? d.grossKg : r.grossKg,
+      pricePerKg: r.pricePerKg === undefined ? d.pricePerKg : r.pricePerKg,
+      processCost: r.processCost === undefined ? d.processCost : r.processCost,
+      targetDiscountPct: r.targetDiscountPct === undefined ? d.targetDiscountPct : r.targetDiscountPct,
+      minutes: r.minutes === undefined ? d.minutes : r.minutes,
+      hourlyRate: r.hourlyRate === undefined ? d.hourlyRate : r.hourlyRate,
+      parts: parts.map((p) => ({
+        name: p && p.name !== undefined && p.name !== null ? String(p.name).slice(0, 24) : '部位',
+        yieldPct: p ? p.yieldPct : 0,
+        pricePerKg: p ? (p.pricePerKg === undefined ? 0 : p.pricePerKg) : 0,
+        cookPct: p ? (p.cookPct === undefined ? 100 : p.cookPct) : 100,
+        cookedPricePerKg: p ? (p.cookedPricePerKg === undefined ? 0 : p.cookedPricePerKg) : 0,
+      })),
+    };
+  }
+  const defaultsClone = () => normCfg(defaults());
+
+  /* ── 校验：逐条给字段，UI 用它标红 ─────────────── */
+  const FIELDS = [
+    ['grossKg', '毛重', (v) => v > 0 && v <= 100000, '必须是 0 到 100000 kg 之间的正数'],
+    ['pricePerKg', '毛重单价', (v) => v > 0 && v <= 1e6, '必须是 0 到 1000000 元/kg 之间的正数'],
+    ['processCost', '处理成本', (v) => v >= 0 && v <= 1e6, '必须是 0 到 1000000 元之间'],
+    ['targetDiscountPct', '目标折扣率', (v) => v >= 1 && v <= 200, '必须是 1% 到 200% 之间'],
+    ['minutes', '处理耗时', (v) => v >= 0 && v <= 1e5, '必须是 0 到 100000 分钟之间'],
+    ['hourlyRate', '你的时间价格', (v) => v >= 0 && v <= 1e6, '必须是 0 到 1000000 元/h 之间'],
+  ];
+  const PART_FIELDS = [
+    ['yieldPct', '出成率', (v) => v >= 0 && v <= 100, '必须是 0% 到 100% 之间'],
+    ['pricePerKg', '该部位市价', (v) => v >= 0 && v <= 1e6, '必须是 0 到 1000000 元/kg 之间'],
+    ['cookPct', '熟制率', (v) => v > 0 && v <= 300, '必须大于 0 且不超过 300%'],
+    ['cookedPricePerKg', '成品熟食市价', (v) => v >= 0 && v <= 1e6, '必须是 0 到 1000000 元/kg 之间'],
+  ];
+
+  function validate(cfg) {
+    const c = normCfg(cfg);
+    const errors = [];
+    FIELDS.forEach(([k, label, ok, msg]) => {
+      const v = num(c[k]);
+      if (Number.isNaN(v)) errors.push({ field: k, label, msg: label + '不是有效数字', value: c[k] });
+      else if (!ok(v)) errors.push({ field: k, label, msg: label + '：' + msg, value: v });
+    });
+    if (!Array.isArray(c.parts) || c.parts.length < PART_MIN) {
+      errors.push({ field: 'parts', label: '部位清单', msg: '至少要有一个部位', value: c.parts && c.parts.length });
+    } else if (c.parts.length > PART_MAX) {
+      errors.push({ field: 'parts', label: '部位清单', msg: '最多 ' + PART_MAX + ' 个部位', value: c.parts.length });
+    } else {
+      c.parts.forEach((p, i) => {
+        PART_FIELDS.forEach(([k, label, ok, msg]) => {
+          const v = num(p[k]);
+          const id = 'p-' + k + '-' + i;
+          if (Number.isNaN(v)) errors.push({ field: id, label: label, msg: '第 ' + (i + 1) + ' 行「' + p.name + '」的' + label + '不是有效数字', value: p[k] });
+          else if (!ok(v)) errors.push({ field: id, label, msg: '第 ' + (i + 1) + ' 行「' + p.name + '」' + label + '：' + msg, value: v });
+        });
+      });
+    }
+    if (!errors.length) {
+      const sumY = sum(c.parts.map((p) => num(p.yieldPct)));
+      if (sumY > 100 + 1e-9) {
+        errors.push({
+          field: 'parts', label: '出成率合计',
+          msg: '出成率合计 ' + fmtPct(sumY, 2) + ' 超过 100%（多出 ' + fmtPct(sumY - 100, 2) + '）——出成率以毛重为基准，不能加总超过毛重',
+          value: sumY,
+        });
+      }
+      if (sumY <= 0) {
+        errors.push({ field: 'parts', label: '出成率合计', msg: '出成率合计为 0：没有净料，这笔账不成立', value: sumY });
+      }
+    }
+    return errors;
+  }
+
+  /* ── 主计算（纯计算，不跑自检，避免递归） ────────── */
+  function compute(rawCfg) {
+    const cfg = normCfg(rawCfg);
+    const errors = validate(cfg);
+    if (errors.length) return { ok: false, errors, slug: SLUG, version: VERSION };
+
+    const W = num(cfg.grossKg);
+    const pW = num(cfg.pricePerKg);
+    const P = num(cfg.processCost);
+    const target = num(cfg.targetDiscountPct);
+    const minutes = num(cfg.minutes);
+    const hourly = num(cfg.hourlyRate);
+
+    const B = W * pW;                 // 整只买价
+    const C = B + P;                  // 到手总成本
+    const sumY = sum(cfg.parts.map((p) => num(p.yieldPct)));
+    const netKg = W * sumY / 100;
+    const wastePct = 100 - sumY;
+    const wasteKg = W * wastePct / 100;
+
+    const parts = cfg.parts.map((p, i) => {
+      const y = num(p.yieldPct), pi = num(p.pricePerKg), z = num(p.cookPct), q = num(p.cookedPricePerKg);
+      const w = W * y / 100;
+      const v = w * pi;
+      const cookKg = w * z / 100;
+      return { i, name: p.name, yieldPct: y, pricePerKg: pi, cookPct: z, cookedPricePerKg: q, w, v, cookKg };
+    });
+    const V = sum(parts.map((p) => p.v));
+    const r = V > 0 ? C / V : null;
+
+    parts.forEach((p) => {
+      p.share = V > 0 ? p.v / V : null;                  // 产值占比
+      p.alloc = V > 0 ? C * p.v / V : null;              // 分摊成本
+      p.allocUnit = (p.alloc !== null && p.w > 0) ? p.alloc / p.w : null;   // 等效单价 = r·p_i
+      p.save = p.alloc !== null ? p.v - p.alloc : null;  // 相对直接买省下的钱
+      p.cookUnit = (p.alloc !== null && p.cookKg > 0) ? p.alloc / p.cookKg : null;  // 熟食成本单价
+      p.cookSavePerKg = (p.cookUnit !== null && p.cookedPricePerKg > 0) ? p.cookedPricePerKg - p.cookUnit : null;
+      p.cookSave = p.cookSavePerKg !== null ? p.cookSavePerKg * p.cookKg : null;
+      // 临界熟制率：自制熟食单价 = 买成品单价 → z* = r·p/z 里解出 z* = alloc/(w·q) = r·p/q
+      p.cookBreakEvenPct = (r !== null && p.cookedPricePerKg > 0 && p.pricePerKg > 0 && p.w > 0)
+        ? (r * p.pricePerKg / p.cookedPricePerKg) * 100 : null;
+      p.cookVerdict = p.cookSavePerKg === null ? 'none'
+        : (p.cookSavePerKg > Math.abs(p.cookUnit) * 0.03 ? 'cheaper' : (p.cookSavePerKg < -Math.abs(p.cookUnit) * 0.03 ? 'dearer' : 'even'));
+    });
+
+    const netUnit = netKg > 0 ? C / netKg : null;        // 净料单价（含处理成本）
+    const netUnitNoProcess = netKg > 0 ? B / netKg : null;
+    const weightedAvgPrice = netKg > 0 ? V / netKg : null;  // 按净重加权的平均市价
+
+    /* 帕累托：按产值降序，回本最少部位数 */
+    const ranked = parts.slice().sort((a, b) => (b.v - a.v) || (a.i - b.i));
+    let cum = 0;
+    ranked.forEach((p, k) => { cum += p.v; p.rank = k + 1; p.cumV = cum; p.cumShare = V > 0 ? cum / V : null; });
+    let minCover = null;
+    if (V > 0) {
+      for (let k = 1; k <= ranked.length; k++) {
+        if (ranked[k - 1].cumV >= C - 1e-9) { minCover = k; break; }
+      }
+    }
+    const coverParts = minCover ? ranked.slice(0, minCover) : [];
+    const coverShare = (minCover && V > 0) ? ranked[minCover - 1].cumV / V : null;
+    const topShare = ranked.length && V > 0 ? ranked[0].v / V : null;
+
+    /* 反推 */
+    const breakevenPrice = W > 0 ? (V - P) / W : null;             // 含处理成本：让 r = 1
+    const breakevenPriceNoProcess = W > 0 ? V / W : null;          // 不含处理成本
+    const targetCapTotal = V * target / 100;
+    const targetCapPrice = W > 0 ? (targetCapTotal - P) / W : null;
+    const targetOk = r !== null && r <= target / 100 + 1e-12;
+    const rev = {
+      breakevenPrice, breakevenPriceNoProcess, targetCapTotal, targetCapPrice, targetOk,
+      targetDiscountPct: target,
+      // 只靠某一块回本需要的单价：p = C / w_i
+      singleCover: parts.map((p) => ({
+        name: p.name, w: p.w, priceNeeded: p.w > 0 ? C / p.w : null,
+        priceNow: p.pricePerKg,
+        ratio: (p.w > 0 && p.pricePerKg > 0) ? (C / p.w) / p.pricePerKg : null,
+      })),
+      // 只想要某一块时，为它买整只等于每公斤多少钱
+      oneOnly: parts.map((p) => ({
+        name: p.name, w: p.w, costPerKgOfPart: p.w > 0 ? C / p.w : null, priceNow: p.pricePerKg,
+        dearer: (p.w > 0 && p.pricePerKg > 0) ? (C / p.w) > p.pricePerKg : null,
+      })),
+      minutes, hourly,
+      saved: V - C,
+      savedPerHour: minutes > 0 ? (V - C) / (minutes / 60) : null,
+      netUnit, netUnitNoProcess, weightedAvgPrice,
+    };
+
+    /* 判定 */
+    let verdict;
+    if (r === null) verdict = { id: 'none', label: '无法判定', note: '分部位市价合计为 0，没有可比的市场口径' };
+    else if (r < 0.97 - 1e-12) verdict = { id: 'whole', label: '整只更省', note: '按分部位市价采购同样这些净料，要比整只多花 ' + fmtMoney(V - C) };
+    else if (r > 1.03 + 1e-12) verdict = { id: 'parts', label: '分部位更省', note: '整只买反而比按分部位市价采购多花 ' + fmtMoney(C - V) };
+    else verdict = { id: 'even', label: '基本持平', note: '两条路线的总价差在 3% 以内（' + fmtMoney(Math.abs(V - C)) + '）' };
+
+    const kpis = {
+      grossKg: W, boughtPrice: B, totalCost: C, marketValue: V, discountRate: r,
+      netKg, wasteKg, wastePct, netUnit, netUnitNoProcess, weightedAvgPrice,
+      saved: V - C, savedPct: V > 0 ? (V - C) / V * 100 : null,
+      minCover, coverShare, topShare,
+    };
+
+    return {
+      ok: true, slug: SLUG, version: VERSION, cfg, errors: [],
+      verdict, kpis, parts, ranked, rev, sumY, wastePct, wasteKg,
+      name: cfg.name,
+    };
+  }
+
+  /* analyze = compute + 要点/下一步/结构自检（自检内部只调 compute，不会递归） */
+  function analyze(rawCfg) {
+    const res = compute(rawCfg);
+    if (!res.ok) return res;
+    res.insights = insights(res);
+    res.steps = steps(res);
+    res.checks = selfChecks(res);
+    res.checkSummary = { pass: res.checks.filter((c) => c.pass).length, total: res.checks.length };
+    return res;
+  }
+
+  /* ── 结论要点（每个数字都能从上一次重算里回溯） ── */
+  function insights(res) {
+    const k = res.kpis, out = [];
+    if (k.discountRate !== null) {
+      out.push({
+        t: '折扣率 r = ' + fmtNum(k.discountRate, 4) + ' 对每个部位都是同一个数',
+        d: '按售价分摊下，任何部位的等效单价 = r × 它的市价（'
+          + res.parts.slice(0, 3).map((p) => p.name + ' ' + fmtUnit(p.allocUnit)).join('、')
+          + '）。所以「拆哪一块更划算」是个伪问题——真正的杠杆只有整只到手成本与分部位市值之比。',
+      });
+      out.push({
+        t: '净料单价 = ' + fmtUnit(k.netUnit) + '（含处理成本）',
+        d: '整只到手 ' + fmtMoney(k.totalCost) + ' ÷ 净料 ' + fmtKg(k.netKg) + '；去掉处理成本是 '
+          + fmtUnit(k.netUnitNoProcess) + '。它等于 r × 按净重加权的平均市价（' + fmtUnit(k.weightedAvgPrice) + '）。'
+          + '毛重里有 ' + fmtPct(res.wastePct, 2) + '（' + fmtKg(res.wasteKg) + '）进不了肚子，所以「整只 '
+          + fmtNum(num(res.cfg.pricePerKg), 2) + ' 元/kg」不是你能吃到的单价。',
+      });
+    }
+    if (k.minCover) {
+      const names = res.ranked.slice(0, k.minCover).map((p) => p.name).join(' + ');
+      out.push({
+        t: '真正用掉前 ' + k.minCover + ' 块就能回本：' + names,
+        d: '按产值降序累加，前 ' + k.minCover + ' 块合计 ' + fmtMoney(res.ranked[k.minCover - 1].cumV)
+          + '（占市值 ' + fmtPct((res.ranked[k.minCover - 1].cumShare || 0) * 100) + '）已经覆盖到手成本 '
+          + fmtMoney(k.totalCost) + '。最贵的一块占市值 ' + fmtPct((k.topShare || 0) * 100) + '。'
+          + (k.minCover === 1 ? '这一块单独就够本。' : '反过来说，要是你只想要「' + res.ranked[0].name + '」这一块，为它买整只等于按 '
+            + fmtUnit(res.rev.oneOnly[res.ranked[0].i] ? res.rev.oneOnly[res.ranked[0].i].costPerKgOfPart : null)
+            + ' 承担成本（直接买现成的只要 ' + fmtUnit(res.ranked[0].pricePerKg) + '），差额得靠其它部位用掉才补得回来。'),
+      });
+    }
+    const cookRows = res.parts.filter((p) => p.cookSavePerKg !== null);
+    if (cookRows.length) {
+      const best = cookRows.slice().sort((a, b) => b.cookSavePerKg - a.cookSavePerKg)[0];
+      const worst = cookRows.slice().sort((a, b) => a.cookSavePerKg - b.cookSavePerKg)[0];
+      out.push({
+        t: '熟制缩水会二次推高单价：' + best.name + ' 熟食成本 ' + fmtUnit(best.cookUnit)
+          + ' vs 成品 ' + fmtUnit(best.cookedPricePerKg) + '（' + (best.cookSavePerKg >= 0 ? '省 ' : '贵 ')
+          + fmtUnit(Math.abs(best.cookSavePerKg)) + '）',
+        d: '生重 ' + fmtKg(best.w) + ' × 熟制率 ' + fmtPct(best.cookPct, 0) + ' = 熟重 ' + fmtKg(best.cookKg)
+          + '；分摊成本 ' + fmtMoney(best.alloc) + ' ÷ 熟重 = 上面的单价。'
+          + '临界熟制率 ' + fmtPct(best.cookBreakEvenPct) + '：低于它，自制就贵过直接买成品。'
+          + (worst.cookSavePerKg < 0 ? '这本账里 ' + worst.name + ' 已经贵过成品，贵 ' + fmtUnit(Math.abs(worst.cookSavePerKg)) + '。' : ''),
+      });
+    }
+    if (res.rev.savedPerHour !== null && num(res.cfg.minutes) > 0) {
+      out.push({
+        t: '这次自己处理折算 ' + fmtNum(res.rev.savedPerHour, 2) + ' 元/h（按省下的钱 ÷ 花掉的时间）',
+        d: '省下 ' + fmtMoney(res.rev.saved) + '、耗时 ' + fmtNum(num(res.cfg.minutes), 0) + ' 分钟；'
+          + '你自己的时间价格填的是 ' + fmtNum(num(res.cfg.hourlyRate), 2) + ' 元/h——'
+          + (res.rev.savedPerHour >= num(res.cfg.hourlyRate) ? '折算下来不低于它。' : '折算下来低于它，这笔省下的钱其实是在拿时间换。')
+          + '这只是把两个你自己填的数字比一下，页面不替你决定时间值多少钱。',
+      });
+    }
+    return out;
+  }
+
+  /* ── 下一步（都能真的改到输入上） ── */
+  function steps(res) {
+    const k = res.kpis, out = [];
+    const be = res.rev.breakevenPrice;
+    if (be !== null && be > 0) {
+      out.push({
+        t: '盈亏平衡毛重单价是 ' + fmtUnit(be) + '（含处理成本口径）',
+        d: num(res.cfg.pricePerKg) <= be
+          ? '你现在填的 ' + fmtUnit(num(res.cfg.pricePerKg)) + ' 低于它，所以这趟整只买得划算：'
+            + '整只到手 ' + fmtMoney(res.kpis.totalCost) + ' 对应分部位市值 ' + fmtMoney(res.kpis.marketValue) + '。'
+            + '低得越多，这本账给整只留的余地越大。'
+          : '你现在填的 ' + fmtUnit(num(res.cfg.pricePerKg)) + ' 高于它：这样买整只比按分部位市价采购还贵 '
+            + fmtMoney(res.kpis.totalCost - res.kpis.marketValue) + '。要不砍到它以下，要不直接买分部位。',
+        apply: 'breakeven', val: be,
+        btn: '按盈亏平衡价 ' + fmtNum(be, 2) + ' 元/kg 改输入',
+      });
+    }
+    if (res.rev.targetCapPrice !== null) {
+      const cap = Math.max(0, res.rev.targetCapPrice);
+      out.push({
+        t: '按你填的目标折扣率 ' + fmtPct(res.rev.targetDiscountPct, 0) + '，毛重单价上限是 ' + fmtUnit(cap),
+        d: res.rev.targetOk ? '当前折扣率已经在这个目标之内。'
+          : '当前折扣率 ' + fmtNum(k.discountRate, 3) + ' 高于目标 ' + fmtNum(res.rev.targetDiscountPct / 100, 2) + '，要做到得把毛重单价压到上限以内。',
+        apply: 'target', val: cap,
+        btn: '按目标折扣率 ' + fmtNum(cap, 2) + ' 元/kg 改输入',
+      });
+    }
+    const dear = res.parts.filter((p) => p.cookSavePerKg !== null && p.cookSavePerKg < 0);
+    if (dear.length) {
+      out.push({
+        t: '熟食别自己做：' + dear.map((p) => p.name).join('、'),
+        d: '这几块自己熟制后的成本高于成品熟食市价（'
+          + dear.map((p) => p.name + ' ' + fmtUnit(p.cookUnit) + ' vs ' + fmtUnit(p.cookedPricePerKg)).join('；')
+          + '）。要么把熟制率提上去，要么直接买成品。',
+      });
+    }
+    const over = res.parts.filter((p) => p.cookBreakEvenPct !== null && p.cookSavePerKg !== null && p.cookSavePerKg >= 0);
+    if (over.length) {
+      // 临界熟制率越高越难满足 → 最脆弱的是「要求熟制率最高」的那一块
+      const w = over.slice().sort((a, b) => b.cookBreakEvenPct - a.cookBreakEvenPct)[0];
+      out.push({
+        t: '自制熟食最脆弱的一环是 ' + w.name + '：熟制率掉到 ' + fmtPct(w.cookBreakEvenPct) + ' 以下就不划算了',
+        d: '临界熟制率 = r × 它的市价 ÷ 成品熟食市价。现在填的是 ' + fmtPct(w.cookPct, 0) + '。',
+      });
+    }
+    if (res.kpis.minCover && res.kpis.minCover >= 2 && res.ranked[res.kpis.minCover - 1]) {
+      out.push({
+        t: '冰箱/饭量至少安排掉前 ' + res.kpis.minCover + ' 块',
+        d: '按产值降序：' + res.ranked.slice(0, res.kpis.minCover).map((p) => p.name + ' ' + fmtKg(p.w)).join('、')
+          + '——这几块合计覆盖到手成本，剩下的骨头油皮只能算添头。',
+      });
+    }
+    return out;
+  }
+
+  /* ── 结构自检（每次重算都跑；只证明内部一致与量纲，不证明你的输入是真的） ── */
+  function selfChecks(res) {
+    const c = [];
+    const ok = (name, pass, detail) => c.push({ name, pass: !!pass, detail: detail || '' });
+    const k = res.kpis, parts = res.parts, V = k.marketValue, C = k.totalCost, W = k.grossKg;
+    const near = (a, b, tol) => Math.abs(a - b) <= tol;
+
+    ok('净重 + 不可食 = 毛重', near(k.netKg + k.wasteKg, W, 1e-9), '净 ' + k.netKg + ' + 废 ' + k.wasteKg + ' = ' + W);
+    ok('分部位净重之和 = 净料总重', near(sum(parts.map((p) => p.w)), k.netKg, 1e-9), sum(parts.map((p) => p.w)).toString());
+    ok('产值占比合计 = 100%', V > 0 ? near(sum(parts.map((p) => p.share)), 1, 1e-12) : true, V > 0 ? sum(parts.map((p) => p.share)).toString() : '无市值');
+    if (V > 0) {
+      ok('分摊成本合计 = 到手总成本', near(sum(parts.map((p) => p.alloc)), C, 1e-9), sum(parts.map((p) => p.alloc)).toString());
+      ok('等效单价 = r × 市价（逐部位）', parts.every((p) => p.allocUnit === null || near(p.allocUnit, k.discountRate * p.pricePerKg, 1e-9)), '');
+      ok('折扣率 = 到手成本 ÷ 分部位市值', near(k.discountRate, C / V, 1e-12), k.discountRate + ' vs ' + (C / V));
+      ok('省下 = 市值 − 到手成本', near(k.saved, V - C, 1e-9), k.saved.toString());
+      ok('净料单价 = r × 按净重加权平均市价', near(k.netUnit, k.discountRate * k.weightedAvgPrice, 1e-9), k.netUnit + ' vs ' + (k.discountRate * k.weightedAvgPrice));
+      ok('盈亏平衡价回代后 r = 1', (() => {
+        if (res.rev.breakevenPrice === null || res.rev.breakevenPrice <= 0) return true;
+        const r2 = compute(Object.assign({}, res.cfg, { pricePerKg: res.rev.breakevenPrice }));
+        return r2.ok && near(r2.kpis.discountRate, 1, 1e-9);
+      })(), String(res.rev.breakevenPrice));
+      const mc = k.minCover;
+      ok('回本部位数取的是最小前缀', mc === null ? V < C : (res.ranked[mc - 1].cumV >= C - 1e-9 && (mc === 1 || res.ranked[mc - 2].cumV < C - 1e-9)), 'k=' + mc);
+    } else {
+      /* 市值为 0 时同样给满 7 项，保证「17 项」这个口径在任何输入下都成立 */
+      ok('市值为 0 时折扣率记为不可判定', k.discountRate === null, '');
+      ok('市值为 0 时不产生分摊成本', parts.every((p) => p.alloc === null && p.allocUnit === null), '');
+      ok('市值为 0 时不给回本部位数', k.minCover === null, '');
+      ok('市值为 0 时结论记「无法判定」', res.verdict.id === 'none', res.verdict.label);
+      ok('市值为 0 时占比一律记 null', parts.every((p) => p.share === null), '');
+      ok('市值为 0 时省下 = 0 − 到手成本', near(k.saved, -C, 1e-9), String(k.saved));
+      ok('市值为 0 时净料单价仍按到手成本与净重给出', k.netKg > 0 ? near(k.netUnit, C / k.netKg, 1e-12) : k.netUnit === null, String(k.netUnit));
+    }
+    ok('熟重 = 净重 × 熟制率', parts.every((p) => near(p.cookKg, p.w * p.cookPct / 100, 1e-12)), '');
+    ok('熟制率为 0 时不给熟食单价（不返回 Infinity）', parts.every((p) => p.cookPct > 0 || p.cookUnit === null), '');
+    ok('临界熟制率回代 = 成品熟食市价', parts.every((p) => {
+      if (p.cookBreakEvenPct === null) return true;
+      const z = p.cookBreakEvenPct / 100;
+      return near(p.alloc / (p.w * z), p.cookedPricePerKg, 1e-6 * Math.max(1, p.cookedPricePerKg));
+    }), '');
+    ok('全部输出都是有限数（无 NaN / Infinity）', parts.every((p) => ['w', 'v', 'alloc', 'allocUnit', 'save', 'cookKg', 'cookUnit'].every((f) => p[f] === null || Number.isFinite(p[f]))) && [C, V, k.netUnit].every(Number.isFinite), '');
+    ok('毛重单价上涨不会让折扣率下降', (() => {
+      const up = compute(Object.assign({}, res.cfg, { pricePerKg: num(res.cfg.pricePerKg) * 1.5 + 1 }));
+      if (!up.ok || up.kpis.discountRate === null || k.discountRate === null) return true;
+      return up.kpis.discountRate >= k.discountRate - 1e-12;
+    })(), '单调性');
+    ok('处理成本为 0 时折扣率与毛重无关', (() => {
+      const zero = compute(Object.assign({}, res.cfg, { processCost: 0 }));
+      const big = compute(Object.assign({}, res.cfg, { processCost: 0, grossKg: num(res.cfg.grossKg) * 3 }));
+      if (!zero.ok || !big.ok || zero.kpis.discountRate === null) return true;
+      // 恒等式为 r = 毛重单价 ÷ 按净重加权平均市价（与毛重无关）；极小市值下浮点相对误差会放大，容差 1e-9
+      return Math.abs(big.kpis.discountRate - zero.kpis.discountRate) / Math.max(1e-12, Math.abs(zero.kpis.discountRate)) <= 1e-9;
+    })(), 'r = 毛重单价 ÷ 按净重加权平均市价');
+    ok('结论与折扣率同向', (k.discountRate === null && res.verdict.id === 'none')
+      || (k.discountRate < 0.97 && res.verdict.id === 'whole')
+      || (k.discountRate > 1.03 && res.verdict.id === 'parts')
+      || (k.discountRate >= 0.97 && k.discountRate <= 1.03 && res.verdict.id === 'even'), res.verdict.id);
+    return c;
+  }
+
+  /* ── 敏感性（每行完整重算，不是插值） ── */
+  function sensitivity(cfg) {
+    const base = compute(cfg);
+    if (!base.ok) return [];
+    const c = normCfg(cfg);
+    const rows = [];
+    const push = (label, mut) => {
+      const r = compute(mut());
+      rows.push({
+        label,
+        ok: r.ok,
+        discountRate: r.ok ? r.kpis.discountRate : null,
+        netUnit: r.ok ? r.kpis.netUnit : null,
+        minCover: r.ok ? r.kpis.minCover : null,
+        saved: r.ok ? r.kpis.saved : null,
+        verdict: r.ok ? r.verdict.label : '输入不合法',
+      });
+    };
+    const clone = () => JSON.parse(JSON.stringify(c));
+    push('毛重单价 +10%', () => { const x = clone(); x.pricePerKg = num(x.pricePerKg) * 1.1; return x; });
+    push('毛重单价 −10%', () => { const x = clone(); x.pricePerKg = num(x.pricePerKg) * 0.9; return x; });
+    push('处理成本翻倍', () => { const x = clone(); x.processCost = num(x.processCost) * 2; return x; });
+    push('处理成本归零', () => { const x = clone(); x.processCost = 0; return x; });
+    push('所有出成率 × 0.9', () => { const x = clone(); x.parts.forEach((p) => { p.yieldPct = num(p.yieldPct) * 0.9; }); return x; });
+    push('所有出成率 × 1.1（可能超过 100%）', () => { const x = clone(); x.parts.forEach((p) => { p.yieldPct = num(p.yieldPct) * 1.1; }); return x; });
+    push('最贵部位市价 −10%', () => {
+      const x = clone();
+      const top = x.parts.slice().sort((a, b) => (num(b.yieldPct) * num(b.pricePerKg)) - (num(a.yieldPct) * num(a.pricePerKg)))[0];
+      top.pricePerKg = num(top.pricePerKg) * 0.9; return x;
+    });
+    push('最贵部位市价 +10%', () => {
+      const x = clone();
+      const top = x.parts.slice().sort((a, b) => (num(b.yieldPct) * num(b.pricePerKg)) - (num(a.yieldPct) * num(a.pricePerKg)))[0];
+      top.pricePerKg = num(top.pricePerKg) * 1.1; return x;
+    });
+    push('所有熟制率 −10 个百分点', () => { const x = clone(); x.parts.forEach((p) => { p.cookPct = Math.max(1, num(p.cookPct) - 10); }); return x; });
+    push('毛重 +25%（多买一点）', () => { const x = clone(); x.grossKg = num(x.grossKg) * 1.25; return x; });
+    return rows;
+  }
+
+  /* ── 导出 ───────────────────────────────────────── */
+  function backupJson(cfg) {
+    return JSON.stringify({ app: SLUG, version: VERSION, savedAt: new Date().toISOString(), cfg: normCfg(cfg) }, null, 2);
+  }
+  function readBackup(text) {
+    let o;
+    try { o = JSON.parse(String(text)); } catch (e) { throw new Error('不是合法的 JSON'); }
+    if (!o || typeof o !== 'object') throw new Error('备份内容不是对象');
+    const cfg = o.cfg && typeof o.cfg === 'object' ? o.cfg : o;
+    if (!cfg || typeof cfg !== 'object' || !Array.isArray(cfg.parts)) throw new Error('备份里找不到部位清单');
+    const n = normCfg(cfg);
+    const errs = validate(n);
+    if (errs.length) throw new Error('备份内容校验失败：' + errs[0].msg);
+    return n;
+  }
+  function toCsv(res) {
+    if (!res || !res.ok) return '';
+    const L = [];
+    L.push(['出成率对账台', res.name].join(','));
+    L.push(['毛重 kg', num(res.cfg.grossKg)].join(','));
+    L.push(['毛重单价 元/kg', num(res.cfg.pricePerKg)].join(','));
+    L.push(['处理成本 元', num(res.cfg.processCost)].join(','));
+    L.push(['整只买价 元', res.kpis.boughtPrice].join(','));
+    L.push(['到手总成本 元', res.kpis.totalCost].join(','));
+    L.push(['分部位市值合计 元', res.kpis.marketValue].join(','));
+    L.push(['折扣率 r', res.kpis.discountRate].join(','));
+    L.push(['净料总重 kg', res.kpis.netKg].join(','));
+    L.push(['不可食 kg', res.kpis.wasteKg].join(','));
+    L.push(['净料单价 元/kg', res.kpis.netUnit].join(','));
+    L.push(['结论', res.verdict.label].join(','));
+    L.push('');
+    L.push(['部位', '出成率%', '净重kg', '市价元/kg', '产值元', '产值占比%', '分摊成本元', '等效单价元/kg', '省(多付)元', '熟制率%', '熟重kg', '熟食成本元/kg', '成品熟食元/kg', '熟食省(多付)元/kg'].join(','));
+    res.parts.forEach((p) => {
+      L.push([p.name, p.yieldPct, round(p.w, 6), p.pricePerKg, round(p.v, 4), p.share === null ? '' : round(p.share * 100, 4),
+        p.alloc === null ? '' : round(p.alloc, 4), p.allocUnit === null ? '' : round(p.allocUnit, 4),
+        p.save === null ? '' : round(p.save, 4), p.cookPct, round(p.cookKg, 6),
+        p.cookUnit === null ? '' : round(p.cookUnit, 4), p.cookedPricePerKg,
+        p.cookSavePerKg === null ? '' : round(p.cookSavePerKg, 4)].join(','));
+    });
+    L.push('');
+    L.push(['回本最少部位数', res.kpis.minCover === null ? '' : res.kpis.minCover].join(','));
+    L.push(['盈亏平衡毛重单价 元/kg', res.rev.breakevenPrice === null ? '' : round(res.rev.breakevenPrice, 4)].join(','));
+    L.push(['目标折扣率下毛重单价上限 元/kg', res.rev.targetCapPrice === null ? '' : round(res.rev.targetCapPrice, 4)].join(','));
+    L.push(['折算时薪 元/h', res.rev.savedPerHour === null ? '' : round(res.rev.savedPerHour, 4)].join(','));
+    L.push('');
+    L.push(['结构自检', res.checkSummary.pass + '/' + res.checkSummary.total].join(','));
+    L.push(['生成时间', new Date().toISOString()].join(','));
+    return L.join('\n');
+  }
+  function toMd(res) {
+    if (!res || !res.ok) return '';
+    const L = [];
+    L.push('# ' + NAME + ' · ' + res.name);
+    L.push('');
+    L.push('- 结论：**' + res.verdict.label + '**（' + res.verdict.note + '）');
+    L.push('- 整只买价 ' + fmtMoney(res.kpis.boughtPrice) + '，处理成本 ' + fmtMoney(num(res.cfg.processCost)) + '，到手总成本 ' + fmtMoney(res.kpis.totalCost));
+    L.push('- 分部位市值合计 ' + fmtMoney(res.kpis.marketValue) + '，折扣率 r = ' + fmtNum(res.kpis.discountRate, 4));
+    L.push('- 净料 ' + fmtKg(res.kpis.netKg) + '（不可食 ' + fmtKg(res.kpis.wasteKg) + '），净料单价 ' + fmtUnit(res.kpis.netUnit));
+    L.push('- 回本最少部位数 ' + (res.kpis.minCover === null ? '—' : res.kpis.minCover + ' 块'));
+    L.push('');
+    L.push('| 部位 | 出成率 | 净重 | 市价 | 产值 | 占比 | 分摊成本 | 等效单价 | 省(多付) | 熟重 | 熟食成本 | 成品熟食 | 熟食省(多付)/kg |');
+    L.push('|---|---|---|---|---|---|---|---|---|---|---|---|---|');
+    res.parts.forEach((p) => L.push('| ' + p.name + ' | ' + fmtPct(p.yieldPct, 2) + ' | ' + fmtKg(p.w) + ' | ' + fmtUnit(p.pricePerKg) + ' | '
+      + fmtMoney(p.v) + ' | ' + fmtPct((p.share || 0) * 100) + ' | ' + fmtMoney(p.alloc) + ' | ' + fmtUnit(p.allocUnit) + ' | '
+      + fmtMoney(p.save) + ' | ' + fmtKg(p.cookKg) + ' | ' + fmtUnit(p.cookUnit) + ' | ' + fmtUnit(p.cookedPricePerKg) + ' | '
+      + (p.cookSavePerKg === null ? '—' : fmtUnit(p.cookSavePerKg)) + ' |'));
+    L.push('');
+    L.push('## 要记住的几条');
+    res.insights.forEach((x) => { L.push('- **' + x.t + '** ' + x.d); });
+    L.push('');
+    L.push('## 反推');
+    L.push('- 盈亏平衡毛重单价（含处理成本）' + fmtUnit(res.rev.breakevenPrice) + '；不含处理成本 ' + fmtUnit(res.rev.breakevenPriceNoProcess));
+    L.push('- 目标折扣率 ' + fmtPct(res.rev.targetDiscountPct, 0) + ' 下：买价上限 ' + fmtMoney(res.rev.targetCapTotal) + '，毛重单价上限 ' + fmtUnit(res.rev.targetCapPrice));
+    L.push('- 折算时薪 ' + (res.rev.savedPerHour === null ? '—' : fmtNum(res.rev.savedPerHour, 2) + ' 元/h')
+      + '（省 ' + fmtMoney(res.rev.saved) + ' ÷ ' + fmtNum(num(res.cfg.minutes), 0) + ' 分钟；你的时间价格 '
+      + fmtNum(num(res.cfg.hourlyRate), 2) + ' 元/h）');
+    L.push('');
+    L.push('## 结构自检 ' + res.checkSummary.pass + '/' + res.checkSummary.total);
+    res.checks.forEach((x) => L.push('- [' + (x.pass ? 'x' : ' ') + '] ' + x.name + (x.detail ? '（' + x.detail + '）' : '')));
+    L.push('');
+    L.push('> 生成时间 ' + new Date().toISOString() + '；价格与出成率全部来自你填的数字，页面不联网、不查行情。');
+    return L.join('\n');
+  }
+
+  const api = {
+    slug: SLUG, name: NAME, version: VERSION, PART_MAX, PART_MIN,
+    defaults, defaultsClone, scenarios: SCENARIOS, scenarioCfg, normCfg, validate, analyze,
+    sensitivity, insights, steps, selfChecks,
+    backupJson, readBackup, toCsv, toMd,
+    num, fmtNum, fmtMoney, fmtMoney0, fmtKg, fmtUnit, fmtPct, round, sum,
+  };
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  if (root) root.AppCore = api;
+})();
+</script>
+<script>/* 出成率对账台 · ui.js
+ * 界面：读输入 → AppCore.analyze → 渲染结论/KPI/产值图/要点/下一步/反推/两张表/敏感性/自检
+ * 交互：输入即时重算、加删部位、内置场景、本机保存与读取、导入备份、四种导出（CSV/MD/JSON/PNG 结果卡）
+ * 口径：所有展示数字都来自同一次 analyze 的结果；PNG 结果卡用 canvas 画，自底向上排版避免叠字。
+ */
+(function () {
+  'use strict';
+  const C = window.AppCore;
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s === null || s === undefined ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const STORE_KEY = 'yield-ledger:v1';
+  const FONT = '-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif';
+
+  const state = { res: null, renders: 0, exports: 0, lastBad: [] };
+
+  /* ── 读输入 ─────────────────────────────────────── */
+  function readCfg() {
+    const parts = [];
+    document.querySelectorAll('#parts .item').forEach((it, i) => {
+      const val = (k) => {
+        const el = it.querySelector('[data-k="' + k + '"]');
+        return el ? el.value : '';
+      };
+      parts.push({
+        name: val('name'),
+        yieldPct: val('yieldPct'),
+        pricePerKg: val('pricePerKg'),
+        cookPct: val('cookPct'),
+        cookedPricePerKg: val('cookedPricePerKg'),
+      });
+    });
+    return {
+      name: $('g-name').value,
+      grossKg: $('g-grossKg').value,
+      pricePerKg: $('g-pricePerKg').value,
+      processCost: $('g-processCost').value,
+      targetDiscountPct: $('g-targetDiscountPct').value,
+      minutes: $('g-minutes').value,
+      hourlyRate: $('g-hourlyRate').value,
+      parts,
+    };
+  }
+
+  /* ── 渲染部位输入行 ─────────────────────────────── */
+  function partRow(p, i) {
+    const num = (v) => (v === null || v === undefined ? '' : String(v));
+    return '<div class="item" data-part="' + i + '">'
+      + '<div class="itemhead"><span class="idx">第 ' + (i + 1) + ' 块</span>'
+      + '<input type="text" data-k="name" maxlength="24" value="' + esc(p.name) + '" aria-label="部位名称">'
+      + '<button type="button" class="tiny" data-del="' + i + '" title="删除这一块">删</button></div>'
+      + '<div class="gridp">'
+      + '<label>出成率 %（占毛重）<input type="text" data-k="yieldPct" value="' + esc(num(p.yieldPct)) + '"></label>'
+      + '<label>这块的市价 元/kg<input type="text" data-k="pricePerKg" value="' + esc(num(p.pricePerKg)) + '"></label>'
+      + '<label>熟制率 %（做熟后剩）<input type="text" data-k="cookPct" value="' + esc(num(p.cookPct)) + '"></label>'
+      + '<label>成品熟食 元/kg<input type="text" data-k="cookedPricePerKg" value="' + esc(num(p.cookedPricePerKg)) + '"></label>'
+      + '</div></div>';
+  }
+  function renderParts(parts) {
+    $('parts').innerHTML = parts.map(partRow).join('');
+    $('partCount').textContent = parts.length + ' / ' + C.PART_MAX + ' 块';
+  }
+  function fillCfg(cfg) {
+    const c = C.normCfg(cfg);
+    $('g-name').value = c.name;
+    $('g-grossKg').value = String(c.grossKg);
+    $('g-pricePerKg').value = String(c.pricePerKg);
+    $('g-processCost').value = String(c.processCost);
+    $('g-targetDiscountPct').value = String(c.targetDiscountPct);
+    $('g-minutes').value = String(c.minutes);
+    $('g-hourlyRate').value = String(c.hourlyRate);
+    renderParts(c.parts.length ? c.parts : C.defaults().parts);
+  }
+
+  /* ── 计算与渲染 ─────────────────────────────────── */
+  function compute() {
+    const cfg = readCfg();
+    const res = C.analyze(cfg);
+    state.res = res;
+    state.renders++;
+    if (!res.ok) { renderErrors(res); return; }
+    renderErrors({ ok: true, errors: [] });
+    renderAll(res);
+  }
+
+  function renderErrors(res) {
+    const box = $('errBox');
+    document.querySelectorAll('input.bad').forEach((el) => el.classList.remove('bad'));
+    if (res.ok) { box.innerHTML = ''; return; }
+    box.innerHTML = '<div class="errbox"><b>先把这几处改对</b><ul>'
+      + res.errors.map((e) => '<li>' + esc(e.msg) + '</li>').join('') + '</ul></div>';
+    res.errors.forEach((e) => {
+      let target = null;
+      if (e.field && e.field.indexOf('p-') === 0) {
+        const bits = e.field.split('-');       // p-<key>-<index>
+        target = document.querySelector('#parts .item[data-part="' + bits[2] + '"] [data-k="' + bits[1] + '"]');
+      } else if (e.field && e.field !== 'parts') {
+        target = $('g-' + e.field);
+      }
+      if (target) target.classList.add('bad');
+    });
+    $('resultCard').style.opacity = '.45';
+  }
+
+  const pillClass = (id) => (id === 'whole' ? 'ok' : (id === 'even' ? 'tight' : (id === 'parts' ? 'bad' : 'tight')));
+
+  function renderAll(res) {
+    $('resultCard').style.opacity = '1';
+    const k = res.kpis;
+    $('verdictPill').innerHTML = '<span class="pill ' + pillClass(res.verdict.id) + '">' + esc(res.verdict.label) + '</span>';
+    $('verdictDetail').innerHTML = [
+      ['这本账怎么算的', '到手总成本 ' + esc(C.fmtMoney(k.totalCost)) + ' ÷ 分部位市值合计 ' + esc(C.fmtMoney(k.marketValue))
+        + ' = 折扣率 ' + esc(C.fmtNum(k.discountRate, 4))],
+      ['结论', esc(res.verdict.note)],
+      ['净料口径', '毛重 ' + esc(C.fmtKg(k.grossKg)) + ' 里有 ' + esc(C.fmtKg(k.wasteKg)) + '（' + esc(C.fmtPct(res.wastePct, 2))
+        + '）不可食，净料 ' + esc(C.fmtKg(k.netKg)) + '，净料单价 ' + esc(C.fmtUnit(k.netUnit))],
+      ['回本部位数', k.minCover === null ? '分部位市值合计都盖不住到手成本，没有任何组合能回本'
+        : '按产值降序，用掉前 ' + k.minCover + ' 块（' + esc(res.ranked.slice(0, k.minCover).map((p) => p.name).join(' + '))
+          + '）就覆盖到手成本，这 ' + k.minCover + ' 块占市值 ' + esc(C.fmtPct((k.coverShare || 0) * 100))],
+    ].map(([a, b]) => '<span class="k">' + esc(a) + '</span><span class="v">' + b + '</span>').join('');
+
+    $('kpis').innerHTML = [
+      ['整只买价', C.fmtMoney0(k.boughtPrice) + ' 元', '毛重 × 毛重单价'],
+      ['到手总成本', C.fmtMoney0(k.totalCost) + ' 元', '含处理成本 ' + C.fmtMoney0(C.num(res.cfg.processCost)) + ' 元'],
+      ['分部位市值', C.fmtMoney0(k.marketValue) + ' 元', '按你填的市价合计'],
+      ['折扣率 r', C.fmtNum(k.discountRate, 4), '成本 ÷ 市值，< 1 即划算'],
+      ['省下（多付）', C.fmtMoney0(k.saved) + ' 元', k.saved >= 0 ? '相对按市价买分部位' : '买整只反而多花的'],
+      ['净料总重', C.fmtNum(k.netKg, 3) + ' kg', '不可食 ' + C.fmtNum(k.wasteKg, 3) + ' kg'],
+      ['净料单价', C.fmtMoney0(k.netUnit) + ' 元/kg', '到手成本 ÷ 净料重'],
+      ['回本部位数', k.minCover === null ? '做不到' : k.minCover + ' 块', k.minCover === null ? '市值盖不住成本' : '前 ' + k.minCover + ' 块覆盖成本'],
+    ].map(([a, b, c]) => '<div class="kpi"><div class="lab">' + esc(a) + '</div><div class="val">' + esc(b) + '</div><div class="note">' + esc(c) + '</div></div>').join('');
+    $('baselineNote').innerHTML = '整只买价与分部位市价都是<b>你填的数字</b>（默认来自虚构示例，不是行情）；'
+      + '本页不联网、不查价、不预测涨跌。净料单价 ' + esc(C.fmtUnit(k.netUnit)) + ' 是把不可食与处理成本都摊到净料上的口径。';
+    $('grossTag').textContent = '毛重 ' + C.fmtNum(k.grossKg, 3) + ' kg';
+    $('boughtTxt').textContent = C.fmtMoney(k.boughtPrice);
+    $('costTxt').textContent = C.fmtMoney(k.totalCost);
+
+    // 部位合计
+    $('yieldTotal').textContent = C.fmtPct(res.sumY, 2);
+    $('yieldTotal').className = res.sumY > 100 ? 'bad' : '';
+    $('wasteTxt').textContent = C.fmtPct(res.wastePct, 2) + '（' + C.fmtKg(k.wasteKg) + '）';
+    const gap = 100 - res.sumY;
+    $('yieldGap').innerHTML = gap >= 0
+      ? '——剩下的 ' + esc(C.fmtPct(gap, 2)) + ' 按不可食算'
+      : '<b>超出 100%：' + esc(C.fmtPct(-gap, 2)) + '</b>';
+
+    renderChart(res);
+    $('insights').innerHTML = res.insights.map((x) => '<li><b>' + esc(x.t) + '</b><span>' + esc(x.d) + '</span></li>').join('');
+    renderSteps(res);
+    renderRev(res);
+    renderPartsTable(res);
+    renderCookTable(res);
+    renderSens(res);
+    renderChecks(res);
+    $('chartTag').textContent = res.ranked.length + ' 块 · 成本线在 ' + C.fmtPct((k.discountRate || 0) * 100) + ' 处';
+  }
+
+  function renderSteps(res) {
+    $('steps').innerHTML = res.steps.map((s, i) => {
+      const btn = s.apply
+        ? '<button class="tiny" data-apply="' + esc(s.apply) + '" data-val="' + esc(s.val) + '" style="margin-top:6px">' + esc(s.btn || '按这个数改输入') + '</button>'
+        : '';
+      return '<li data-step="' + i + '"><b>' + esc(s.t) + '</b>' + (s.d ? '<span>' + esc(s.d) + '</span>' : '') + btn + '</li>';
+    }).join('');
+  }
+
+  function renderRev(res) {
+    const k = res.kpis;
+    $('revTag').textContent = k.discountRate === null ? '不可反推' : 'r = ' + C.fmtNum(k.discountRate, 3);
+    if (k.discountRate === null) {
+      $('revBox').innerHTML = '<div class="warnbox">分部位市价合计是 0，没有可比的市场口径，反推不成立。至少给一块填一个大于 0 的市价。</div>';
+      return;
+    }
+    const rows = res.rev.singleCover.map((s, i) => {
+      const p = res.parts[i];
+      return '<tr><td>' + esc(s.name) + '</td><td>' + C.fmtKg(s.w) + '</td><td>' + C.fmtUnit(s.priceNow) + '</td>'
+        + '<td>' + C.fmtUnit(s.priceNeeded) + '</td><td>' + (s.ratio === null ? '—' : C.fmtNum(s.ratio, 2) + '×') + '</td>'
+        + '<td>' + (p.cookUnit === null ? '—' : C.fmtUnit(p.cookUnit)) + '</td>'
+        + '<td>' + (p.cookBreakEvenPct === null ? '—' : C.fmtPct(p.cookBreakEvenPct)) + '</td></tr>';
+    }).join('');
+    $('revBox').innerHTML =
+      '<div class="kv" style="margin-bottom:8px">'
+      + '<span class="k">盈亏平衡毛重单价</span><span class="v">' + esc(C.fmtUnit(res.rev.breakevenPrice))
+      + '（含处理成本口径；填这个价，r 恰好 = 1）</span>'
+      + '<span class="k">不含处理成本口径</span><span class="v">' + esc(C.fmtUnit(res.rev.breakevenPriceNoProcess)) + '</span>'
+      + '<span class="k">目标折扣率 ' + esc(C.fmtPct(res.rev.targetDiscountPct, 0)) + ' 的买价上限</span><span class="v">'
+      + esc(C.fmtMoney(Math.max(0, res.rev.targetCapTotal))) + '，对应毛重单价 ≤ ' + esc(C.fmtUnit(Math.max(0, res.rev.targetCapPrice)))
+      + '（当前 ' + (res.rev.targetOk ? '已满足' : '未满足') + '）</span>'
+      + '<span class="k">折算时薪</span><span class="v">' + (res.rev.savedPerHour === null ? '未填耗时'
+        : esc(C.fmtNum(res.rev.savedPerHour, 2)) + ' 元/h（省 ' + esc(C.fmtMoney(res.rev.saved)) + ' ÷ ' + esc(C.fmtNum(C.num(res.cfg.minutes), 0)) + ' 分钟；你的时间价格 ' + esc(C.fmtNum(C.num(res.cfg.hourlyRate), 2)) + ' 元/h）') + '</span>'
+      + '</div>'
+      + '<div class="tw"><table id="revTable"><thead><tr><th>部位</th><th>净重</th><th>市价</th><th>单独覆盖成本要卖到</th><th>倍数</th><th>熟食成本</th><th>临界熟制率</th></tr></thead>'
+      + '<tbody>' + rows + '</tbody></table></div>'
+      + '<p class="footnote scrollhint">表格比屏幕宽：左右滑动可以看到全部列。</p>'
+      + '<p class="footnote">「单独覆盖成本要卖到」= 到手总成本 ÷ 这一块的净重：意思是如果只靠这一块把整只的钱挣回来，它得卖到这个价。倍数 = 该价 ÷ 你填的市价。</p>'
+      + (res.rev.breakevenPrice !== null && res.rev.breakevenPrice <= 0
+        ? '<div class="warnbox">处理成本已经高于分部位市值合计，盈亏平衡价算出来是负的（' + esc(C.fmtNum(res.rev.breakevenPrice, 2))
+          + ' 元/kg）——这说明不管毛重单价多少都回不了本，如实给出，不硬凑一个正数。</div>' : '');
+  }
+
+  function renderPartsTable(res) {
+    $('partBody').innerHTML = res.parts.map((p) => '<tr>'
+      + '<td>' + esc(p.name) + (p.w === 0 ? ' <span style="color:#9a5b00">（出成率 0）</span>' : '') + '</td>'
+      + '<td>' + C.fmtPct(p.yieldPct, 2) + '</td>'
+      + '<td>' + C.fmtKg(p.w) + '</td>'
+      + '<td>' + C.fmtUnit(p.pricePerKg) + '</td>'
+      + '<td>' + C.fmtMoney(p.v) + '</td>'
+      + '<td>' + (p.share === null ? '—' : C.fmtPct(p.share * 100)) + '</td>'
+      + '<td>' + C.fmtMoney(p.alloc) + '</td>'
+      + '<td>' + C.fmtUnit(p.allocUnit) + '</td>'
+      + '<td style="color:' + (p.save === null ? '' : (p.save >= 0 ? '#0f7b52' : '#b42318')) + '">'
+      + (p.save === null ? '—' : (p.save >= 0 ? '省 ' : '多付 ') + C.fmtMoney(Math.abs(p.save))) + '</td>'
+      + '</tr>').join('');
+    const k = res.kpis;
+    $('tfYield').textContent = C.fmtPct(res.sumY, 2);
+    $('tfNet').textContent = C.fmtKg(k.netKg);
+    $('tfWaste').textContent = '不可食 ' + C.fmtPct(res.wastePct, 2);
+    $('tfValue').textContent = C.fmtMoney(k.marketValue);
+    $('tfShare').textContent = k.marketValue > 0 ? '100.0%' : '—';
+    $('tfCost').textContent = C.fmtMoney(k.totalCost);
+    $('tfUnit').textContent = C.fmtUnit(k.netUnit);
+    $('tfSave').textContent = C.fmtMoney(k.saved);
+  }
+
+  function renderCookTable(res) {
+    const rows = res.parts.filter((p) => p.cookSavePerKg !== null);
+    if (!rows.length) {
+      $('cookBody').innerHTML = '<tr><td colspan="7">没有填成品熟食市价，熟制账没有可比对象（填 0 表示不比）。</td></tr>';
+      return;
+    }
+    $('cookBody').innerHTML = rows.map((p) => '<tr>'
+      + '<td>' + esc(p.name) + '</td>'
+      + '<td>' + C.fmtPct(p.cookPct, 1) + '</td>'
+      + '<td>' + C.fmtKg(p.cookKg) + '</td>'
+      + '<td>' + C.fmtUnit(p.cookUnit) + '</td>'
+      + '<td>' + C.fmtUnit(p.cookedPricePerKg) + '</td>'
+      + '<td style="color:' + (p.cookSavePerKg >= 0 ? '#0f7b52' : '#b42318') + '">'
+      + (p.cookSavePerKg >= 0 ? '省 ' : '多付 ') + C.fmtUnit(Math.abs(p.cookSavePerKg)) + '</td>'
+      + '<td>' + (p.cookBreakEvenPct === null ? '—' : C.fmtPct(p.cookBreakEvenPct) + (p.cookSavePerKg < 0 ? '（已经低于）' : '')) + '</td>'
+      + '</tr>').join('');
+  }
+
+  function renderSens(res) {
+    const rows = C.sensitivity(res.cfg);
+    $('sensBody').innerHTML = rows.map((x) => '<tr>'
+      + '<td>' + esc(x.label) + '</td>'
+      + '<td>' + (x.discountRate === null ? '—' : C.fmtNum(x.discountRate, 4)) + '</td>'
+      + '<td>' + C.fmtUnit(x.netUnit) + '</td>'
+      + '<td>' + (x.saved === null ? '—' : C.fmtMoney(x.saved)) + '</td>'
+      + '<td>' + (x.minCover === null ? '—' : x.minCover + ' 块') + '</td>'
+      + '<td>' + esc(x.verdict) + '</td></tr>').join('');
+  }
+
+  function renderChecks(res) {
+    $('checkTag').textContent = res.checkSummary.pass + ' / ' + res.checkSummary.total;
+    $('checkTag').className = res.checkSummary.pass === res.checkSummary.total ? 'tag gray' : 'tag';
+    $('checks').innerHTML = res.checks.map((c) => '<li class="' + (c.pass ? '' : 'no') + '"><b>' + (c.pass ? '✔' : '✘') + '</b> '
+      + esc(c.name) + (c.detail ? '（' + esc(c.detail) + '）' : '') + '</li>').join('');
+  }
+
+  /* ── 产值图（内联 SVG，横条 + 成本线） ───────────
+   * 窄屏不是把同一张图整体缩小（那样字会小到看不清），而是换一套几何：
+   * 更窄的 viewBox + 名称在左、数值放到条下方 + 只保留 0/50/100 三个刻度。
+   * 纵轴刻度用 max(市值, 成本)：成本高于市值时成本线不会跑到画布外面。
+   */
+  function textWidth(str, fs) {
+    let w = 0;
+    for (const ch of String(str)) w += (ch.charCodeAt(0) > 0x2e80 ? 1 : 0.56) * fs;
+    return w;
+  }
+  function clipText(str, fs, maxW) {
+    let t = String(str);
+    if (textWidth(t, fs) <= maxW) return t;
+    while (t.length > 1 && textWidth(t + '…', fs) > maxW) t = t.slice(0, -1);
+    return t + '…';
+  }
+  function renderChart(res) {
+    const V = res.kpis.marketValue, Cc = res.kpis.totalCost;
+    if (!(V > 0)) {
+      $('chart').innerHTML = '<p style="padding:14px;color:#7b8794;font-size:13px">分部位市价合计为 0，画不出产值图。给至少一块填一个大于 0 的市价。</p>';
+      return;
+    }
+    const narrow = (window.innerWidth || 1280) < 620;
+    const W = narrow ? 380 : 820;
+    const L = narrow ? 94 : 132, R = narrow ? 10 : 26;
+    const rowH = narrow ? 44 : 34, top = narrow ? 26 : 30;
+    const fsName = narrow ? 12 : 12.5, fsVal = narrow ? 11 : 11.5, fsAxis = narrow ? 10.5 : 11;
+    const rows = res.ranked;
+    const H = top + rows.length * rowH + (narrow ? 46 : 34);
+    const axisMax = Math.max(V, Cc);            // 成本高于市值时也画得下
+    const plotW = W - L - R;
+    const x = (v) => L + (v / axisMax) * plotW;
+    const covIdx = res.kpis.minCover === null ? -1 : res.kpis.minCover - 1;
+    let s = '<svg id="chartSvg" viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;max-width:100%;height:auto;display:block" role="img" aria-label="各部位产值与成本覆盖图">';
+    // 刻度文案：数值过大时用紧凑记法，免得标签比图还长
+    const axisLabel = (v) => (v === 0 ? '0' : (Math.abs(v) >= 1e7 ? v.toExponential(2).replace('e+', 'e') : C.fmtMoney0(v)));
+    let ticks = narrow ? [0, 50, 100] : [0, 25, 50, 75, 100];
+    if (ticks.some((p) => axisLabel(axisMax * p / 100).length > 12)) ticks = narrow ? [0, 100] : [0, 50, 100];
+    ticks.forEach((p) => {
+      const xx = L + plotW * p / 100;
+      // 两端的刻度标签向内收，避免被画布裁掉
+      const anchor = p === 0 ? 'start' : (p === 100 ? 'end' : 'middle');
+      const tx = p === 0 ? L : (p === 100 ? W - R : xx);
+      s += '<line x1="' + xx.toFixed(1) + '" y1="' + (top - 10) + '" x2="' + xx.toFixed(1) + '" y2="' + (top + rows.length * rowH) + '" stroke="#eef1f5"/>';
+      s += '<text x="' + tx.toFixed(1) + '" y="' + (top - 14) + '" font-size="' + fsAxis + '" fill="#7b8794" text-anchor="' + anchor + '">'
+        + esc(axisLabel(axisMax * p / 100)) + '</text>';
+    });
+    rows.forEach((p, i) => {
+      const y = top + i * rowH;
+      const bw = Math.max(1.5, (p.v / axisMax) * plotW);
+      const cumX = x(p.cumV);
+      const name = clipText(p.name, fsName, L - 12);
+      s += '<text x="' + (L - 8) + '" y="' + (y + (narrow ? 24 : 21)) + '" font-size="' + fsName + '" fill="#161b22" text-anchor="end">' + esc(name) + '</text>';
+      s += '<rect x="' + L + '" y="' + (y + (narrow ? 10 : 6)) + '" width="' + bw.toFixed(1) + '" height="' + (narrow ? 14 : 18) + '" rx="3" fill="' + (i === covIdx ? '#0f7b52' : '#0f5fa6') + '"/>';
+      s += '<rect x="' + L + '" y="' + (y + (narrow ? 26 : 24)) + '" width="' + Math.max(0, cumX - L).toFixed(1) + '" height="4" rx="2" fill="#9ec4e4"/>';
+      const val = C.fmtMoney0(p.v) + ' 元 · ' + C.fmtPct((p.share || 0) * 100, 0) + (i === covIdx ? ' · 累计过线' : '');
+      if (narrow) {
+        s += '<text x="' + L + '" y="' + (y + 42) + '" font-size="' + fsVal + '" fill="#4a5568">' + esc(clipText(val, fsVal, W - L - R)) + '</text>';
+      } else {
+        const vx = Math.min(W - R - 4, L + bw + 8);
+        s += '<text x="' + vx.toFixed(1) + '" y="' + (y + 20) + '" font-size="' + fsVal + '" fill="#4a5568">' + esc(val) + '</text>';
+      }
+    });
+    const costX = x(Cc);
+    s += '<line x1="' + costX.toFixed(1) + '" y1="' + (top - 10) + '" x2="' + costX.toFixed(1) + '" y2="' + (top + rows.length * rowH + 4) + '" stroke="#b42318" stroke-width="2" stroke-dasharray="5 4"/>';
+    const costLabel = '成本 ' + C.fmtMoney0(Cc) + ' 元（市值 ' + C.fmtPct((res.kpis.discountRate || 0) * 100)
+      + (Cc > V ? '；成本高于市值，刻度按成本取' : '') + '）';
+    // 成本线文案独占一行：窄屏靠左起排，宽屏贴着线但两端都收进画布
+    const cLy = top + rows.length * rowH + (narrow ? 32 : 20);
+    if (narrow) {
+      s += '<text x="' + L + '" y="' + cLy + '" font-size="' + fsVal + '" fill="#b42318">' + esc(clipText(costLabel, fsVal, W - L - R)) + '</text>';
+    } else {
+      const cw = textWidth(costLabel, fsVal);
+      const anchor = (costX + 5 + cw > W - R) ? 'end' : 'start';
+      const cx = anchor === 'end' ? Math.max(L + cw, costX - 5) : Math.min(W - R - cw, costX + 5);
+      s += '<text x="' + cx.toFixed(1) + '" y="' + cLy + '" font-size="' + fsVal + '" fill="#b42318" text-anchor="' + anchor + '">' + esc(costLabel) + '</text>';
+    }
+    s += '</svg>';
+    $('chart').innerHTML = s;
+  }
+
+  /* ── 四种导出 ───────────────────────────────────── */
+  function download(name, text, type) {
+    const blob = new Blob([text], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name; a.style.display = 'none';
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 4000);
+    state.exports++;
+  }
+
+  /* 按「词元」换行：数字/英文/百分号整体不拆开，避免出现 38.32 被断成 3 + 8.32 */
+  function wrapLines(g, text, maxW) {
+    const tokens = String(text).match(/[A-Za-z0-9][A-Za-z0-9.,%\/\-]*|\s+|[\s\S]/g) || [];
+    const lines = [];
+    let cur = '';
+    tokens.forEach((tk) => {
+      if (/^\s+$/.test(tk)) { if (cur) cur += '';  return; }
+      const t = cur + tk;
+      if (g.measureText(t).width > maxW && cur) { lines.push(cur); cur = tk; }
+      else cur = t;
+    });
+    if (cur) lines.push(cur);
+    return lines;
+  }
+
+  function drawCard(res) {
+    const W = 1080, H = 1350, PAD = 64;
+    const cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    const g = cv.getContext('2d');
+    g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#0f5fa6'; g.fillRect(0, 0, W, 12);
+    const setFont = (size, weight) => { g.font = (weight || 400) + ' ' + size + 'px ' + FONT; };
+    const k = res.kpis;
+    const textW = W - PAD * 2;
+
+    /* 先量高度，再自顶向下画（内容变长时整体上移，不叠字） */
+    const blocks = [];
+    setFont(44, 700);
+    blocks.push({ type: 'h', lines: ['出成率对账台'] });
+    setFont(24, 400);
+    blocks.push({ type: 'p', color: '#4a5568', lines: wrapLines(g, res.name + ' · 结论：' + res.verdict.label + '（' + res.verdict.note + '）', textW) });
+    const kpi = [
+      ['到手总成本', C.fmtMoney0(k.totalCost) + ' 元'],
+      ['分部位市值', C.fmtMoney0(k.marketValue) + ' 元'],
+      ['折扣率 r', C.fmtNum(k.discountRate, 4)],
+      ['净料单价', C.fmtMoney0(k.netUnit) + ' 元/kg'],
+      ['净料/不可食', C.fmtNum(k.netKg, 3) + ' / ' + C.fmtNum(k.wasteKg, 3) + ' kg'],
+      ['回本部位数', k.minCover === null ? '做不到' : k.minCover + ' 块'],
+    ];
+    blocks.push({ type: 'kpi', items: kpi });
+    setFont(25, 600);
+    blocks.push({ type: 'h2', lines: ['反推'] });
+    setFont(23, 400);
+    blocks.push({
+      type: 'p', color: '#4a5568', lines: wrapLines(g,
+        '盈亏平衡毛重单价 ' + C.fmtUnit(res.rev.breakevenPrice) + '（含处理成本）；目标折扣率 ' + C.fmtPct(res.rev.targetDiscountPct, 0)
+        + ' 对应毛重单价上限 ' + C.fmtUnit(Math.max(0, res.rev.targetCapPrice)) + '；折算时薪 '
+        + (res.rev.savedPerHour === null ? '未填耗时' : C.fmtNum(res.rev.savedPerHour, 2) + ' 元/h'), textW).slice(0, 3),
+    });
+    setFont(25, 600);
+    blocks.push({ type: 'h2', lines: ['要记住的几条'] });
+    res.insights.slice(0, 3).forEach((x, i) => {
+      setFont(23, 600);
+      const head = wrapLines(g, (i + 1) + '. ' + x.t, textW - 8).slice(0, 2);
+      // 要点正文只取第一句：宁可少说一句，也不要在卡上留下半截被裁掉的话
+      const firstSentence = String(x.d).split('。')[0] + '。';
+      setFont(21, 400);
+      let body = wrapLines(g, firstSentence, textW - 8);
+      if (body.length > 2) body = body.slice(0, 2).map((l, j) => (j === 1 ? l.slice(0, Math.max(0, l.length - 1)) + '…' : l));
+      blocks.push({ type: 'ins', lines: head.concat(body) });
+    });
+    setFont(20, 400);
+    blocks.push({ type: 'p', color: '#0f7b52', lines: ['结构自检 ' + res.checkSummary.pass + ' / ' + res.checkSummary.total + ' 通过（每次重算都跑）'] });
+    setFont(19, 600);
+    blocks.push({ type: 'h2', lines: ['口径与边界'] });
+    setFont(19, 400);
+    blocks.push({
+      type: 'p', color: '#4a5568', lines: [
+        '口径：出成率以毛重为基准；联合成本按相对售价法分摊；熟制只按质量缩水。',
+        '边界：不含运费、税费、包装、冰箱电费与存放损耗；不做食品卫生与安全判定。',
+      ],
+    });
+    setFont(18, 400);
+    blocks.push({ type: 'p', color: '#7b8794', lines: ['价格与出成率全部由用户填写，页面不联网、不查行情 · ' + new Date().toLocaleString('zh-CN')] });
+
+    const height = (b) => {
+      if (b.type === 'h') return 78;
+      if (b.type === 'h2') return 44;
+      if (b.type === 'kpi') return 2 * 92 + 14;
+      if (b.type === 'ins') return b.lines.length * 30 + 14;
+      return b.lines.length * 30 + 10;
+    };
+    let total = 0;
+    blocks.forEach((b) => { total += height(b); });
+    // 内容偏短时整体略微下移居中，内容过长时从顶部开始
+    let y = Math.max(88, Math.round((H - total) / 2));
+
+    blocks.forEach((b) => {
+      if (b.type === 'h') {
+        setFont(44, 700); g.fillStyle = '#161b22';
+        g.fillText(b.lines[0], PAD, y + 40);
+        g.fillStyle = '#0f5fa6'; g.fillRect(PAD, y + 56, 120, 5);
+        y += height(b); return;
+      }
+      if (b.type === 'h2') {
+        setFont(25, 600); g.fillStyle = '#0f5fa6';
+        g.fillText(b.lines[0], PAD, y + 30);
+        y += height(b); return;
+      }
+      if (b.type === 'kpi') {
+        const cw = (W - PAD * 2 - 2 * 18) / 3;
+        b.items.forEach(([lab, val], i) => {
+          const cx = PAD + (i % 3) * (cw + 18);
+          const cy = y + Math.floor(i / 3) * 92;
+          g.fillStyle = '#fafbfc'; g.fillRect(cx, cy, cw, 80);
+          g.strokeStyle = '#e3e6eb'; g.lineWidth = 2; g.strokeRect(cx, cy, cw, 80);
+          setFont(18, 400); g.fillStyle = '#7b8794';
+          g.fillText(lab, cx + 16, cy + 28);
+          setFont(28, 700); g.fillStyle = '#161b22';
+          let t = String(val);
+          while (g.measureText(t).width > cw - 32 && t.length > 2) { t = t.slice(0, -2) + '…'; }
+          g.fillText(t, cx + 16, cy + 62);
+        });
+        y += height(b); return;
+      }
+      if (b.type === 'ins') {
+        b.lines.forEach((l, j) => {
+          const isHead = j === 0 || (b.lines.length > 1 && /^\d+\. /.test(l));
+          setFont(isHead ? 23 : 21, isHead ? 600 : 400);
+          g.fillStyle = isHead ? '#161b22' : '#4a5568';
+          g.fillText(l, PAD + 8, y + 24 + j * 30);
+        });
+        y += height(b); return;
+      }
+      setFont(b.fontSize || 23, 400);
+      b.lines.forEach((l, j) => {
+        g.fillStyle = b.color || '#4a5568';
+        g.fillText(l, PAD, y + 24 + j * 30);
+      });
+      y += height(b);
+    });
+
+    cv.toBlob((b) => {
+      const url = URL.createObjectURL(b);
+      const a = document.createElement('a');
+      a.href = url; a.download = '出成率对账台-结果卡.png'; a.style.display = 'none';
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 4000);
+      state.exports++;
+    }, 'image/png', 0.94);
+  }
+
+  /* ── 本机保存 / 读取 / 导入 ─────────────────────── */
+  function saveLocal(silent) {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(readCfg()));
+      if (!silent) toast('已保存到本机（刷新后自动恢复）');
+      $('storeNote').textContent = '已保存到本机（localStorage）——最后一次改动的时间：' + new Date().toLocaleString('zh-CN');
+    } catch (e) { if (!silent) toast('本机保存失败：' + e.message); }
+  }
+  function loadLocal(showToast) {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (!raw) { if (showToast) toast('本机没有保存过的设置'); return false; }
+      fillCfg(JSON.parse(raw));
+      compute();
+      if (showToast) toast('已读取本机保存的设置');
+      return true;
+    } catch (e) { if (showToast) toast('读取失败：' + e.message); return false; }
+  }
+  function importBackup(file) {
+    const fr = new FileReader();
+    fr.onload = () => {
+      try {
+        fillCfg(C.readBackup(String(fr.result)));
+        $('scenario').value = '';
+        compute();
+        toast('已导入备份并重算');
+      } catch (e) { toast('导入失败：' + e.message); }
+    };
+    fr.readAsText(file);
+  }
+
+  let toastTimer = null;
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.style.opacity = '1';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 2200);
+  }
+
+  function applyPatch(kind, val) {
+    const v = C.num(val);
+    if (!Number.isFinite(v) || v <= 0) { toast('这个反推值不可用（' + val + '）'); return; }
+    if (kind === 'breakeven' || kind === 'target') {
+      const el = $('g-pricePerKg');
+      el.value = String(C.round(v, 4));
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      toast(kind === 'breakeven' ? '毛重单价已改为盈亏平衡价' : '毛重单价已改为目标折扣率上限');
+    }
+  }
+
+  /* ── 事件绑定 ───────────────────────────────────── */
+  function bind() {
+    const recompute = () => compute();
+    ['g-name', 'g-grossKg', 'g-pricePerKg', 'g-processCost', 'g-targetDiscountPct', 'g-minutes', 'g-hourlyRate']
+      .forEach((id) => {
+        const el = $(id);
+        el.addEventListener('input', recompute);
+        el.addEventListener('change', recompute);
+      });
+    $('parts').addEventListener('input', recompute);
+    $('parts').addEventListener('change', recompute);
+    $('parts').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-del]');
+      if (!btn) return;
+      const rows = document.querySelectorAll('#parts .item');
+      if (rows.length <= 1) { toast('至少要留一个部位'); return; }
+      const parts = readCfg().parts;
+      parts.splice(Number(btn.getAttribute('data-del')), 1);
+      renderParts(parts);
+      compute();
+    });
+    $('btnAddPart').addEventListener('click', () => {
+      const parts = readCfg().parts;
+      if (parts.length >= C.PART_MAX) { toast('最多 ' + C.PART_MAX + ' 个部位'); return; }
+      const used = C.sum(parts.map((p) => C.num(p.yieldPct) || 0));
+      const rest = Math.max(0, 100 - used);
+      parts.push({ name: '新部位', yieldPct: Math.min(rest, 10), pricePerKg: 30, cookPct: 80, cookedPricePerKg: 0 });
+      renderParts(parts);
+      compute();
+    });
+    $('btnDelPart').addEventListener('click', () => {
+      const parts = readCfg().parts;
+      if (parts.length <= 1) { toast('至少要留一个部位'); return; }
+      parts.pop();
+      renderParts(parts);
+      compute();
+    });
+    $('steps').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-apply]');
+      if (!btn) return;
+      applyPatch(btn.getAttribute('data-apply'), btn.getAttribute('data-val'));
+    });
+    $('scenario').addEventListener('change', (e) => {
+      const id = e.target.value;
+      if (!id) return;
+      fillCfg(C.scenarioCfg(id));
+      compute();
+      toast('已载入场景：' + (C.scenarios.filter((s) => s.id === id)[0] || {}).name);
+    });
+    $('btnReset').addEventListener('click', () => { $('scenario').value = ''; fillCfg(C.defaultsClone()); compute(); toast('已恢复默认（虚构示例）'); });
+    $('btnSave').addEventListener('click', () => saveLocal(false));
+    $('btnLoad').addEventListener('click', () => loadLocal(true));
+    $('importFile').addEventListener('change', (e) => { if (e.target.files && e.target.files[0]) importBackup(e.target.files[0]); e.target.value = ''; });
+    $('btnCsv').addEventListener('click', () => {
+      if (!state.res || !state.res.ok) { toast('先修正输入错误再导出'); return; }
+      download('出成率对账台.csv', '\ufeff' + C.toCsv(state.res), 'text/csv;charset=utf-8');
+    });
+    $('btnMd').addEventListener('click', () => {
+      if (!state.res || !state.res.ok) { toast('先修正输入错误再导出'); return; }
+      download('出成率对账台.md', C.toMd(state.res), 'text/markdown;charset=utf-8');
+    });
+    $('btnJson').addEventListener('click', () => download('出成率对账台-备份.json', C.backupJson(readCfg()), 'application/json'));
+    $('btnPng').addEventListener('click', () => {
+      if (!state.res || !state.res.ok) { toast('先修正输入错误再导出'); return; }
+      drawCard(state.res);
+    });
+    $('btnPrint').addEventListener('click', () => window.print());
+  }
+
+  /* ── 启动 ───────────────────────────────────────── */
+  let resizeTimer = null;
+  function onResize() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (state.res && state.res.ok) renderChart(state.res);
+    }, 200);
+  }
+
+  function boot() {
+    $('scenario').innerHTML = '<option value="">— 自己填 —</option>'
+      + C.scenarios.map((s) => '<option value="' + s.id + '">' + esc(s.name) + '</option>').join('');
+    let cfg = null;
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (raw) cfg = JSON.parse(raw);
+    } catch (e) { cfg = null; }
+    let filled = false;
+    if (cfg) {
+      try { fillCfg(cfg); filled = true; } catch (e) { filled = false; }
+    }
+    if (!filled) fillCfg(C.defaultsClone());
+    bind();
+    window.addEventListener('resize', onResize);
+    compute();
+    /* 验收用的只读/半只读钩子：读状态、按真实事件改输入 */
+    window.__yl = {
+      __v: 46,
+      res: function () { return state.res; },
+      cfg: function () { return C.normCfg(readCfg()); },
+      exports: function () { return state.exports; },
+      renders: function () { return state.renders; },
+      checks: function () { return state.res && state.res.ok ? state.res.checks : []; },
+      setField: function (id, value) {
+        const el = $(id);
+        if (!el) return false;
+        el.value = String(value);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        return true;
+      },
+      setPart: function (i, key, value) {
+        const el = document.querySelector('#parts .item[data-part="' + i + '"] [data-k="' + key + '"]');
+        if (!el) return false;
+        el.value = String(value);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        return true;
+      },
+      addPart: function () { $('btnAddPart').click(); return document.querySelectorAll('#parts .item').length; },
+      delPart: function (i) {
+        const btn = document.querySelector('#parts .item[data-part="' + i + '"] [data-del]');
+        if (!btn) return false;
+        btn.click();
+        return document.querySelectorAll('#parts .item').length;
+      },
+      pickScenario: function (id) {
+        const el = $('scenario');
+        el.value = id;
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        return true;
+      },
+      saveLocal: function () { saveLocal(true); return localStorage.getItem(STORE_KEY); },
+      sens: function () { return C.sensitivity(C.normCfg(readCfg())); },
+      toCsv: function () { return state.res && state.res.ok ? C.toCsv(state.res) : ''; }
+    };
+    window.__yieldReady = true;
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+})();
+</script>
+</body>
+</html>
